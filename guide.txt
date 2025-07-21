@@ -1,0 +1,24 @@
+shs_prediction/
+├── manage.py
+├── shs_prediction/        ← project settings
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+│
+├── predictor/             ← your app
+│   ├── migrations/
+│   ├── templates/
+│   │   └── predictor/
+│   │       └── ...html
+│   ├── static/
+│   ├── models.py          ← database models
+│   ├── views.py           ← business logic
+│   ├── urls.py            ← route mapping
+│   ├── forms.py           ← optional: for admin input
+│   ├── utils/             ← optional: ML logic, preprocessing
+│   │   └── ml_model.py
+│   └── admin.py
+│
+├── requirements.txt
+└── README.md
