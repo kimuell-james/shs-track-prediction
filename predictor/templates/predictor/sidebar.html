@@ -1,0 +1,20 @@
+<div class="offcanvas offcanvas-start show sidebar" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1"
+    id="offcanvas" aria-labelledby="offcanvasLabel" style="visibility: visible; transform: none;">
+    <div class="offcanvas-header">
+        <img src="/docs/5.3/assets/brand/bootstrap-logo.svg" alt="Logo" width="30" height="24"
+            class="d-inline-block align-text-top">
+        <h5 class="offcanvas-title" id="offcanvasLabel">SHS Track Insight</h5>
+    </div>
+    <div class="offcanvas-body">
+        <ul class="sidebar-menu">
+            <li><a class="sidebar-item" href="{% url 'home' %}">Dashboard</a></li>
+            <li><a class="sidebar-item" href="{% url 'students_record' %}">Student Record</a></li>
+            <li><a class="sidebar-item" href="{% url 'predict_track' %}">Predict Track</a></li>
+            <li><a class="sidebar-item" href="{% url 'model_evaluation' %}">Model Evaluation</a></li>
+            <li><a class="sidebar-item" href="{% url 'admin_panel' %}">Admin Panel</a></li>
+        </ul>
+        <div>
+            <p>Logout</p>
+        </div>
+    </div>
+</div>

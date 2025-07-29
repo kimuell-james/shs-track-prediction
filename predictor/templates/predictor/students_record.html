@@ -1,0 +1,51 @@
+{% extends 'predictor/main.html' %}
+
+{% block content %}
+
+<h1>Students Record</h1>
+
+<div>
+    <input type="text">
+    <button>Search</button>
+    <button>Add Student</button>
+</div>
+<div>
+    <div>
+        <div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Age</th>
+                        <th>Gender</th>
+                        <th>Grade Level</th>
+                        <th>School year</th>
+                        <th>Predicted Track</th>
+                        <th>Actual Track</th>
+                        <th>Contributing Subject</th>
+                        <th>Update</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{record.student_id}}</td>
+                        <td>{{record.age}}</td>
+                        <td>{{record.gender}}</td>
+                        <td>{{record.grade_level}}</td>
+                        <td>{{record.sy}}</td>
+                        <td>{{record.predicted_track}}</td>
+                        <td>{{record.actual_track}}</td>
+                        <td>{{record.important_subject}}</td>
+                        <td><a href="">Update</a></td>
+                        <td><a href="">Delete</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
