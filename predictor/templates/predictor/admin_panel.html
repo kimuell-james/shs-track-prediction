@@ -4,6 +4,35 @@
 
 <h1>Admin Panel</h1>
 
-<p><a class="" href="{% url 'admin:index' %}">Super User</a></p>
+<div>
+    <div>
+        <div>
+            <h4>User List</h4>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+
+                        <th>Update</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                    <tr>
+                        <td>{{admin.admin_id}}</td>
+                        <td>{{admin.username}}</td>
+                        <td>{{admin.email}}</td>
+                        <td><a href="">Update</a></td>
+                        <td><a href="">Delete</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

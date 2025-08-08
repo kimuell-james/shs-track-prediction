@@ -1,0 +1,74 @@
+{% extends 'predictor/main.html' %}
+
+{% block content %}
+<div class="row">
+    <form method="POST">
+        {% csrf_token %}
+        <div class="row">
+            <!-- Student Info -->
+            <div class="col-md-4">
+                <h5>Student Info</h5>
+                {{ student_form.as_p }}
+            </div>
+
+            <!-- G7 Grades -->
+            <div class="col-md-2">
+                <h5>Grade 7</h5>
+                {{ grades_form.g7_filipino.label }} {{ grades_form.g7_filipino }}
+                {{ grades_form.g7_english.label }} {{ grades_form.g7_english }}
+                {{ grades_form.g7_math.label }} {{ grades_form.g7_math }}
+                {{ grades_form.g7_science.label }} {{ grades_form.g7_science }}
+                {{ grades_form.g7_ap.label }} {{ grades_form.g7_ap }}
+                {{ grades_form.g7_tle.label }} {{ grades_form.g7_tle }}
+                {{ grades_form.g7_mapeh.label }} {{ grades_form.g7_mapeh }}
+                {{ grades_form.g7_esp.label }} {{ grades_form.g7_esp }}
+            </div>
+
+            <!-- G8 Grades -->
+            <div class="col-md-2">
+                <h5>Grade 8</h5>
+                {{ grades_form.g8_filipino.label }} {{ grades_form.g8_filipino }}
+                {{ grades_form.g8_english.label }} {{ grades_form.g8_english }}
+                {{ grades_form.g8_math.label }} {{ grades_form.g8_math }}
+                {{ grades_form.g8_science.label }} {{ grades_form.g8_science }}
+                {{ grades_form.g8_ap.label }} {{ grades_form.g8_ap }}
+                {{ grades_form.g8_tle.label }} {{ grades_form.g8_tle }}
+                {{ grades_form.g8_mapeh.label }} {{ grades_form.g8_mapeh }}
+                {{ grades_form.g8_esp.label }} {{ grades_form.g8_esp }}
+            </div>
+
+            <!-- G9 Grades -->
+            <div class="col-md-2">
+                <h5>Grade 9</h5>
+                {{ grades_form.g9_filipino.label }} {{ grades_form.g9_filipino }}
+                {{ grades_form.g9_english.label }} {{ grades_form.g9_english }}
+                {{ grades_form.g9_math.label }} {{ grades_form.g9_math }}
+                {{ grades_form.g9_science.label }} {{ grades_form.g9_science }}
+                {{ grades_form.g9_ap.label }} {{ grades_form.g9_ap }}
+                {{ grades_form.g9_tle.label }} {{ grades_form.g9_tle }}
+                {{ grades_form.g9_mapeh.label }} {{ grades_form.g9_mapeh }}
+                {{ grades_form.g9_esp.label }} {{ grades_form.g9_esp }}
+            </div>
+
+            <!-- G8 Grades -->
+            <div class="col-md-2">
+                <h5>Grade 10</h5>
+                {{ grades_form.g10_filipino.label }} {{ grades_form.g10_filipino }}
+                {{ grades_form.g10_english.label }} {{ grades_form.g10_english }}
+                {{ grades_form.g10_math.label }} {{ grades_form.g10_math }}
+                {{ grades_form.g10_science.label }} {{ grades_form.g10_science }}
+                {{ grades_form.g10_ap.label }} {{ grades_form.g10_ap }}
+                {{ grades_form.g10_tle.label }} {{ grades_form.g10_tle }}
+                {{ grades_form.g10_mapeh.label }} {{ grades_form.g10_mapeh }}
+                {{ grades_form.g10_esp.label }} {{ grades_form.g10_esp }}
+            </div>
+
+        </div>
+
+        <a href="{% url 'students_record' %}" class="btn btn-primary">Back</a>
+        {% if not readonly %}
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

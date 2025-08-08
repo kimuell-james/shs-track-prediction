@@ -1,5 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
+from .predict_track import predict_track_for_student  # you need to create this
+from django.contrib import messages
 from .models import *
+from .forms import *
 
 def home(request):
     records = Student.objects.all()
@@ -15,12 +18,65 @@ def studentsRecord(request):
 
     return render(request, 'predictor/students_record.html', context)
 
-def predictTrack(request):
-    records = Student.objects.all()
+def viewStudentRecord(request, pk):
+    student = get_object_or_404(Student, student_id=pk)
+    grades = get_object_or_404(StudentGrade, student_id=student)
+
+    student_form = StudentForm(instance=student)
+    grades_form = StudentGradesForm(instance=grades)
+
+    for field in student_form.fields.values():
+        field.widget.attrs['readonly'] = True
+        field.widget.attrs['disabled'] = True
+
+    for field in grades_form.fields.values():
+        field.widget.attrs['readonly'] = True
+        field.widget.attrs['disabled'] = True
+
+    context = {'student_form': student_form, 'grades_form': grades_form, 'mode': 'view'}
+    return render(request, 'predictor/student_form.html', context)
+
+
+def updateStudentRecord(request, pk):
+    student = get_object_or_404(Student, student_id=pk)
+    grades = get_object_or_404(StudentGrade, student_id=student)
+
+    if request.method == 'POST':
+        student_form = StudentForm(request.POST, instance=student)
+        grades_form = StudentGradesForm(request.POST, instance=grades)
+
+        if student_form.is_valid() and grades_form.is_valid():
+            student_form.save()
+            grades_form.save()
+            return redirect('predictor/student_form.html')  # or redirect to a success page
+        
+    else:
+        student_form = StudentForm(instance=student)
+        grades_form = StudentGradesForm(instance=grades)
+
+    context = {'student_form': student_form, 'grades_form': grades_form, 'mode': 'edit'}
+    return render(request, 'predictor/student_form.html', context)
+
+def predictTrackList(request):
+    records = Student.objects.filter(predicted_track__isnull=True)
 
     context = {'records': records}
 
     return render(request, 'predictor/predict_track.html', context)
+
+def predictStudentTrack(request, student_id):
+    student = get_object_or_404(Student, id=student_id)
+
+    # Call your model logic here
+    predicted_track, contributing_subjects = predict_track_for_student(student)
+
+    # Update the student record
+    student.predicted_track = predicted_track
+    student.contributing_subjects = ", ".join(contributing_subjects)  # list to comma string
+    student.save()
+
+    messages.success(request, f"Prediction complete: {predicted_track}")
+    return redirect('predict_track')
 
 def modelEvaluation(request):
     records = Student.objects.all()

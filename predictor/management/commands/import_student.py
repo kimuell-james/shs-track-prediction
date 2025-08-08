@@ -10,14 +10,13 @@ class Command(BaseCommand):
     help = 'Import student data and grades from CSV'
 
     def handle(self, *args, **kwargs):
-        # csv_path = os.path.join('shs_track_prediction', 'data', 'shs_prediction_testset.csv')  # adjust if needed
+        # csv_path = os.path.join('shs_track_prediction', 'data', 'shs_prediction_testset.csv')
         csv_path = Path(settings.BASE_DIR) / 'data' / 'shs_prediction_testset.csv'
 
-        # Make sure school year exists
         sy_obj, _ = SchoolYear.objects.get_or_create(school_year="2023-2024")
 
         with open(csv_path, newline='', encoding='utf-8') as csvfile:
-            reader = csv.DictReader(csvfile, delimiter=',')  # use ',' if needed
+            reader = csv.DictReader(csvfile, delimiter=',')  
 
             for row in reader:
                 student = Student.objects.create(

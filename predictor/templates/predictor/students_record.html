@@ -7,7 +7,9 @@
 <div>
     <input type="text">
     <button>Search</button>
-    <button>Add Student</button>
+    <a id="addStudentBtn" type="button" class="btn btn-success">
+        Add Student
+    </a>
 </div>
 <div>
     <div>
@@ -23,6 +25,7 @@
                         <th>Predicted Track</th>
                         <th>Actual Track</th>
                         <th>Contributing Subject</th>
+                        <th>View</th>
                         <th>Update</th>
                         <th>Delete</th>
                     </tr>
@@ -38,7 +41,12 @@
                         <td>{{record.predicted_track}}</td>
                         <td>{{record.actual_track}}</td>
                         <td>{{record.important_subject}}</td>
-                        <td><a href="">Update</a></td>
+                        <td>
+                            <a href="{% url 'view_record' record.student_id %}" class="btn btn-primary">View</a>
+                        </td>
+                        <td>
+                            <a href="{% url 'update_record' record.student_id %}" class="btn btn-warning">Update</a>
+                        </td>
                         <td><a href="">Delete</a></td>
                     </tr>
                     {% endfor %}

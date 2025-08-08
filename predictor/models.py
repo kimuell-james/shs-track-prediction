@@ -27,6 +27,9 @@ class Student(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     predicted_at = models.DateTimeField(blank=True, null=True)
 
+    def __str__(self):
+        return str(self.student_id)
+
 class StudentGrade(models.Model):
     grade_id = models.AutoField(primary_key=True)
     student_id = models.ForeignKey(Student, on_delete=models.CASCADE)
