@@ -31,7 +31,7 @@
                         <td>{{record.gender}}</td>
                         <td>{{record.predicted_track}}</td>
                         <td>{{record.important_subject}}</td>
-                        <td><a href="{% url 'predict_student_track' student_id %}">Predict Track</a></td>
+                        <td><a href="{% url 'predict_student_track' record.student_id %}">Predict Track</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>

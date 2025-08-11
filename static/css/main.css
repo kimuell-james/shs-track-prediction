@@ -32,3 +32,21 @@
 .sidebar .btn-close {
     display: none;
 }
+
+/* Toast alert messages*/
+.toast {
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast.hide,
+.toast:not(.show) {
+    transform: translateX(120%);
+    opacity: 0;
+}

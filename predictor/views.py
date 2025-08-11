@@ -1,6 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from .predict_track import predict_track_for_student  # you need to create this
 from django.contrib import messages
+from django.http import JsonResponse
+from django.urls import reverse
 from .models import *
 from .forms import *
 
@@ -18,6 +20,42 @@ def studentsRecord(request):
 
     return render(request, 'predictor/students_record.html', context)
 
+def addStudentRecord(request):
+# Get the next student ID
+    last_student = Student.objects.order_by('-student_id').first()
+    next_id = last_student.student_id + 1 if last_student else 1
+
+    if request.method == "POST":
+        student_form = StudentForm(request.POST)
+        grades_form = StudentGradesForm(request.POST)
+
+        if student_form.is_valid() and grades_form.is_valid():
+            student = student_form.save(commit=False)
+            student.student_id = next_id  # assign ID manually
+            student.save()
+
+            grades = grades_form.save(commit=False)
+            grades.student_id = student
+            grades.save()
+
+            return redirect(f"{reverse('students_record')}?msg=success")
+        else:
+            print("Add student - student_form errors:", student_form.errors)
+            print("Add student - grades_form errors:", grades_form.errors)
+
+    else:
+        student_form = StudentForm()
+        grades_form = StudentGradesForm()
+
+    context = {
+        'student_form': student_form,
+        'grades_form': grades_form,
+        'readonly': False,
+        "is_add": True,
+        "display_id": next_id
+    }
+    return render(request, "predictor/student_form.html", context)
+
 def viewStudentRecord(request, pk):
     student = get_object_or_404(Student, student_id=pk)
     grades = get_object_or_404(StudentGrade, student_id=student)
@@ -33,7 +71,7 @@ def viewStudentRecord(request, pk):
         field.widget.attrs['readonly'] = True
         field.widget.attrs['disabled'] = True
 
-    context = {'student_form': student_form, 'grades_form': grades_form, 'mode': 'view'}
+    context = {'student_form': student_form, 'grades_form': grades_form, 'readonly': True, 'mode': 'view', 'display_id': student.student_id,}
     return render(request, 'predictor/student_form.html', context)
 
 
@@ -48,14 +86,42 @@ def updateStudentRecord(request, pk):
         if student_form.is_valid() and grades_form.is_valid():
             student_form.save()
             grades_form.save()
-            return redirect('predictor/student_form.html')  # or redirect to a success page
-        
-    else:
-        student_form = StudentForm(instance=student)
-        grades_form = StudentGradesForm(instance=grades)
-
-    context = {'student_form': student_form, 'grades_form': grades_form, 'mode': 'edit'}
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
+            return redirect(f"{reverse('students_record')}?msg=success")
+        else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'errors': {
+                    'student': student_form.errors,
+                    'grades': grades_form.errors
+                }})
+            return redirect(f"{reverse('students_record')}?msg=error")
+    
+    # normal GET
+    student_form = StudentForm(instance=student)
+    grades_form = StudentGradesForm(instance=grades)
+    context = {'student_form': student_form, 'grades_form': grades_form, 'readonly': False, "is_add": False, 'mode': 'edit', 'display_id': student.student_id,}
     return render(request, 'predictor/student_form.html', context)
+
+def deleteStudentRecord(request, pk):
+    student = get_object_or_404(Student, student_id=pk)
+
+    if request.method == "POST":
+        # Delete grades first (if cascade is not set in model)
+        StudentGrade.objects.filter(student_id=student).delete()
+
+        # Delete the student
+        student.delete()
+
+        messages.success(request, "Student record deleted successfully!")
+        return redirect(f"{reverse('students_record')}?msg=deleted")
+
+    else:
+        return redirect(f"{reverse('students_record')}?msg=error")
+    
+    # context = {'student': student}
+    
+    # return render(request, 'predictor/confirm_delete.html', context)
 
 def predictTrackList(request):
     records = Student.objects.filter(predicted_track__isnull=True)
@@ -64,8 +130,8 @@ def predictTrackList(request):
 
     return render(request, 'predictor/predict_track.html', context)
 
-def predictStudentTrack(request, student_id):
-    student = get_object_or_404(Student, id=student_id)
+def predictStudentTrack(request, pk):
+    student = get_object_or_404(Student, id=pk)
 
     # Call your model logic here
     predicted_track, contributing_subjects = predict_track_for_student(student)

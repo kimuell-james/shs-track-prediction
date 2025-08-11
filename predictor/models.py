@@ -27,6 +27,15 @@ class Student(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     predicted_at = models.DateTimeField(blank=True, null=True)
 
+    def save(self, *args, **kwargs):
+        if not self.student_id:
+            last_student = Student.objects.order_by('-student_id').first()
+            self.student_id = (last_student.student_id + 1) if last_student else 1
+        super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ['student_id']
+
     def __str__(self):
         return str(self.student_id)
 
