@@ -118,31 +118,19 @@ def deleteStudentRecord(request, pk):
 
     else:
         return redirect(f"{reverse('students_record')}?msg=error")
-    
-    # context = {'student': student}
-    
-    # return render(request, 'predictor/confirm_delete.html', context)
-
-def predictTrackList(request):
-    records = Student.objects.filter(predicted_track__isnull=True)
-
-    context = {'records': records}
-
-    return render(request, 'predictor/predict_track.html', context)
 
 def predictStudentTrack(request, pk):
-    student = get_object_or_404(Student, id=pk)
+    student = get_object_or_404(Student, student_id=pk)
+    grades = get_object_or_404(StudentGrade, student_id=student)
 
-    # Call your model logic here
-    predicted_track, contributing_subjects = predict_track_for_student(student)
+    predicted_track, predicted_label, contributing_subject_names = predict_track_for_student(student, grades)
 
-    # Update the student record
-    student.predicted_track = predicted_track
-    student.contributing_subjects = ", ".join(contributing_subjects)  # list to comma string
+    student.predicted_track = predicted_label
+    student.contributing_subjects = ", ".join(contributing_subject_names)
     student.save()
 
-    messages.success(request, f"Prediction complete: {predicted_track}")
-    return redirect('predict_track')
+    messages.success(request, f"Prediction complete: {predicted_label}")
+    return redirect(f"{reverse('students_record')}?msg=success")
 
 def modelEvaluation(request):
     records = Student.objects.all()

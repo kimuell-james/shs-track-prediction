@@ -25,6 +25,7 @@
                         <th>Predicted Track</th>
                         <th>Actual Track</th>
                         <th>Contributing Subject</th>
+                        <th>Predict Track</th>
                         <th>View</th>
                         <th>Update</th>
                         <th>Delete</th>
@@ -38,11 +39,13 @@
                         <td>{{record.gender}}</td>
                         <td>{{record.grade_level}}</td>
                         <td>{{record.sy}}</td>
-                        <td>{{record.predicted_track}}</td>
+                        <td>{{ record.predicted_track|default:"—" }}</td>
                         <td>{{record.actual_track}}</td>
-                        <td>{{record.important_subject}}</td>
+                        <td>{{ record.contributing_subjects|default:"—" }}</td>
+                        <td><a href="{% url 'predict_student_track' record.student_id %}" class="btn
+                                btn-primary">Predict</a></td>
                         <td>
-                            <a href="{% url 'view_record' record.student_id %}" class="btn btn-primary">View</a>
+                            <a href="{% url 'view_record' record.student_id %}" class="btn btn-secondary">View</a>
                         </td>
                         <td>
                             <a href="{% url 'update_record' record.student_id %}" class="btn btn-warning">Update</a>

@@ -23,7 +23,7 @@ class Student(models.Model):
     sy = models.ForeignKey(SchoolYear, on_delete=models.CASCADE)
     predicted_track = models.CharField(max_length=50, blank=True, null=True)
     actual_track = models.CharField(max_length=50, blank=True, null=True)
-    important_subject = models.TextField(blank=True, null=True)
+    contributing_subjects = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     predicted_at = models.DateTimeField(blank=True, null=True)
 
