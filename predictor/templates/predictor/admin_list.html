@@ -5,6 +5,14 @@
 <h1>Admin Panel</h1>
 <hr>
 <div>
+    <input type="text">
+    <button>Search</button>
+    <a href="#" type="button" class="btn btn-success">
+        Add User
+    </a>
+</div>
+
+<div>
     <div>
         <div>
             <h4>User List</h4>
@@ -25,18 +33,20 @@
                         <td>{{admin.admin_id}}</td>
                         <td>{{admin.username}}</td>
                         <td>{{admin.email}}</td>
-                        <td><a href="">Update</a></td>
-                        <td><a href="">Delete</a></td>
+                        <td>
+                            <a href="#" class="btn btn-warning">Update</a>
+                        </td>
+                        <td><!-- Delete button triggers modal -->
+                            <button type="button" class="btn btn-danger deleteBtn" data-id="">
+                                Delete
+                            </button>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-            <hr>
-            <a href="{% url 'admin_list' %}" class="btn btn-primary">See User List</a>
         </div>
     </div>
 </div>
-<div>
-    <h4>Set School Year</h4>
-</div>
+
 {% endblock %}

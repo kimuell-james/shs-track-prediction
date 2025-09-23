@@ -1,8 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .predict_track import predict_track_for_student  # you need to create this
 from django.contrib import messages
 from django.http import JsonResponse
 from django.urls import reverse
+from .predict_track import predict_track_for_student 
 from .models import *
 from .forms import *
 
@@ -123,14 +123,19 @@ def predictStudentTrack(request, pk):
     student = get_object_or_404(Student, student_id=pk)
     grades = get_object_or_404(StudentGrade, student_id=student)
 
-    predicted_track, predicted_label, contributing_subject_names = predict_track_for_student(student, grades)
+    predicted_track, predicted_label, top_contributors = predict_track_for_student(student, grades)
+
+    # Extract only subject names from tuples
+    subject_names = [name for name, _ in top_contributors]
 
     student.predicted_track = predicted_label
-    student.contributing_subjects = ", ".join(contributing_subject_names)
+    student.contributing_subjects = ", ".join(subject_names)  # safe now
     student.save()
 
     messages.success(request, f"Prediction complete: {predicted_label}")
-    return redirect(f"{reverse('students_record')}?msg=success")
+    # return redirect(f"{reverse('students_record')}?msg=success")
+    return redirect(f"{reverse('students_record')}?msg=success#student-{student.student_id}")
+
 
 def modelEvaluation(request):
     records = Student.objects.all()
@@ -145,3 +150,10 @@ def adminPanel(request):
     context = {'admin': admin}
 
     return render(request, 'predictor/admin_panel.html', context)
+
+def adminList(request):
+    admin = Admin.objects.all()
+
+    context = {'admin': admin}
+
+    return render(request, 'predictor/admin_list.html', context)

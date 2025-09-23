@@ -1,19 +1,29 @@
+{% load static %}
+
 <div class="offcanvas offcanvas-start show sidebar" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1"
     id="offcanvas" aria-labelledby="offcanvasLabel" style="visibility: visible; transform: none;">
     <div class="offcanvas-header">
-        <img src="/docs/5.3/assets/brand/bootstrap-logo.svg" alt="Logo" width="30" height="24"
+        <img src="{% static 'images/shs_logo.png' %}" alt="Logo" width="150" height="150"
             class="d-inline-block align-text-top">
-        <h5 class="offcanvas-title" id="offcanvasLabel">SHS Track Insight</h5>
+        <!-- <h5 class="offcanvas-title" id="offcanvasLabel">SHS Track Insight</h5> -->
     </div>
     <div class="offcanvas-body">
         <ul class="sidebar-menu">
-            <li><a class="sidebar-item" href="{% url 'home' %}">Dashboard</a></li>
-            <li><a class="sidebar-item" href="{% url 'students_record' %}">Student Record</a></li>
-            <li><a class="sidebar-item" href="{% url 'model_evaluation' %}">Model Evaluation</a></li>
-            <li><a class="sidebar-item" href="{% url 'admin_panel' %}">Admin Panel</a></li>
+            <li>
+                <h5><a class="sidebar-item" href="{% url 'home' %}">Dashboard</a></h5>
+            </li>
+            <li>
+                <h5><a class="sidebar-item" href="{% url 'students_record' %}">Student Record</a></h5>
+            </li>
+            <li>
+                <h5><a class="sidebar-item" href="{% url 'model_evaluation' %}">Model Evaluation</a></h5>
+            </li>
+            <li>
+                <h5><a class="sidebar-item" href="{% url 'admin_panel' %}">Admin Panel</a></h5>
+            </li>
         </ul>
         <div>
-            <p>Logout</p>
+            <a class="sidebar-item" href="#">Logout</a>
         </div>
     </div>
 </div>
