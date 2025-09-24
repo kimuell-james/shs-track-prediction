@@ -1,7 +1,50 @@
 {% extends 'predictor/main.html' %}
+{% load custom_filters %}
 
 {% block content %}
-
 <h1>Model Evaluation</h1>
 <hr>
+
+{% if no_data %}
+<p>No data available for evaluation.</p>
+{% else %}
+
+<h3>Total records evaluated: <strong>{{ count }}</strong></h3>
+
+<h3>Accuracy: {{ accuracy }}%</h3>
+
+<h3>Confusion Matrix</h3>
+<img src="data:image/png;base64,{{ cm_base64 }}" alt="Confusion Matrix" />
+
+<h3>ROC Curve</h3>
+<h5>ROC-AUC Score: <strong>{{ roc_auc }}</strong></h5>
+<img src="data:image/png;base64,{{ roc_base64 }}" alt="ROC Curve" />
+
+<h3>Classification Metrics</h3>
+<!-- Visualization -->
+<img src="data:image/png;base64,{{ metrics_base64 }}" alt="Metrics Bar Chart" />
+
+<!-- Table -->
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Label</th>
+        <th>Precision</th>
+        <th>Recall</th>
+        <th>F1-Score</th>
+        <th>Support</th>
+    </tr>
+    {% for label, metrics in report.items %}
+    {% if label not in "accuracy macro avg weighted avg" %}
+    <tr>
+        <td>{{ label }}</td>
+        <td>{{ metrics.precision|floatformat:2 }}</td>
+        <td>{{ metrics.recall|floatformat:2 }}</td>
+        <td>{{ metrics.f1_score|floatformat:2 }}</td>
+        <td>{{ metrics.support }}</td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+</table>
+
+{% endif %}
 {% endblock %}
