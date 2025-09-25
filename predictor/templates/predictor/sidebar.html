@@ -19,11 +19,14 @@
                 <h5><a class="sidebar-item" href="{% url 'model_evaluation' %}">Model Evaluation</a></h5>
             </li>
             <li>
-                <h5><a class="sidebar-item" href="{% url 'admin_panel' %}">Admin Panel</a></h5>
+                <!-- <h5><a class="sidebar-item" href="{% url 'admin_panel' %}">Admin Panel</a></h5> -->
+                {% if user.is_superuser %}
+                <h5><a href="{% url 'admin_panel' %}">Admin Dashboard</a></h5>
+                {% endif %}
             </li>
         </ul>
         <div>
-            <a class="sidebar-item" href="#">Logout</a>
+            <a class="sidebar-item" href="{% url 'logout' %}">Logout</a>
         </div>
     </div>
 </div>

@@ -8,6 +8,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import io, base64
 import numpy as np
+from django.forms import inlineformset_factory
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.http import JsonResponse
@@ -17,7 +21,50 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 
 from .models import *
 from .forms import *
+from .decorators import unauthenticated_user
 
+def admin_required(user):
+    return user.is_superuser  # or user.is_staff depending on your design
+
+def registerPage(request):
+    if not request.user.is_superuser:  # only superuser can register users
+        messages.error(request, "You do not have permission to register users.")
+        return redirect("login")
+
+    if request.method == "POST":
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "User created successfully!")
+            return redirect("login")
+    else:
+        form = RegisterForm()
+    return render(request, "predictor/register.html", {"form": form})
+
+@unauthenticated_user
+def loginPage(request):
+    if request.method == "POST":
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get("username")
+            password = form.cleaned_data.get("password")
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f"Welcome {username}!")
+                return redirect("home")  # change to your homepage
+            else:
+                messages.error(request, "Invalid username or password.")
+    else:
+        form = LoginForm()
+    return render(request, "predictor/login.html", {"form": form})
+
+def logoutUser(request):
+    logout(request)
+    messages.info(request, "Logged out successfully.")
+    return redirect("login")
+
+@login_required(login_url="/login/")
 def home(request):
     records = Student.objects.all()
 
@@ -25,6 +72,7 @@ def home(request):
 
     return render(request, 'predictor/dashboard.html', context)
 
+@login_required(login_url="/login/")
 def studentsRecord(request):
     records = Student.objects.all()
 
@@ -32,6 +80,7 @@ def studentsRecord(request):
 
     return render(request, 'predictor/students_record.html', context)
 
+@login_required(login_url="/login/")
 def addStudentRecord(request):
 # Get the next student ID
     last_student = Student.objects.order_by('-student_id').first()
@@ -68,6 +117,7 @@ def addStudentRecord(request):
     }
     return render(request, "predictor/student_form.html", context)
 
+@login_required(login_url="/login/")
 def viewStudentRecord(request, pk):
     student = get_object_or_404(Student, student_id=pk)
     grades = get_object_or_404(StudentGrade, student_id=student)
@@ -86,7 +136,7 @@ def viewStudentRecord(request, pk):
     context = {'student_form': student_form, 'grades_form': grades_form, 'readonly': True, 'mode': 'view', 'display_id': student.student_id,}
     return render(request, 'predictor/student_form.html', context)
 
-
+@login_required(login_url="/login/")
 def updateStudentRecord(request, pk):
     student = get_object_or_404(Student, student_id=pk)
     grades = get_object_or_404(StudentGrade, student_id=student)
@@ -115,6 +165,7 @@ def updateStudentRecord(request, pk):
     context = {'student_form': student_form, 'grades_form': grades_form, 'readonly': False, "is_add": False, 'mode': 'edit', 'display_id': student.student_id,}
     return render(request, 'predictor/student_form.html', context)
 
+@login_required(login_url="/login/")
 def deleteStudentRecord(request, pk):
     student = get_object_or_404(Student, student_id=pk)
 
@@ -131,6 +182,7 @@ def deleteStudentRecord(request, pk):
     else:
         return redirect(f"{reverse('students_record')}?msg=error")
 
+@login_required(login_url="/login/")
 def predictStudentTrack(request, pk):
     student = get_object_or_404(Student, student_id=pk)
     grades = get_object_or_404(StudentGrade, student_id=student)
@@ -156,6 +208,7 @@ def plot_to_base64():
     plt.close()
     return img_base64
 
+@login_required(login_url="/login/")
 def modelEvaluation(request):
     # Load model
     model_path = os.path.join(settings.BASE_DIR, 'predictor', 'ml_models', 'logreg_balanced.pkl')
@@ -295,6 +348,7 @@ def modelEvaluation(request):
 
     return render(request, "predictor/model_evaluation.html", context)
 
+@user_passes_test(admin_required, login_url="/login/")
 def adminPanel(request):
     admin = Admin.objects.all()
 
@@ -302,6 +356,8 @@ def adminPanel(request):
 
     return render(request, 'predictor/admin_panel.html', context)
 
+@user_passes_test(admin_required, login_url="/login/")
+@login_required(login_url="/login/")
 def adminList(request):
     admin = Admin.objects.all()
 
