@@ -20,7 +20,9 @@ urlpatterns = [
     path('model_evaluation/', views.modelEvaluation, name='model_evaluation'),
 
     path('admin_panel/', views.adminPanel, name='admin_panel'),
-    path('admin_panel/admin_list/', views.adminList, name='admin_list'),
+    path("users/update/<int:user_id>/", views.updateUser, name="update_user"),
+    path("users/delete/<int:user_id>/", views.deleteUser, name="delete_user"),
+    # path('admin_panel/admin_list/', views.adminList, name='admin_list'),
 
 
 ]

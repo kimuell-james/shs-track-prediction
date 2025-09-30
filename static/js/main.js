@@ -105,4 +105,5 @@ document.addEventListener("DOMContentLoaded", function () {
             showToast(...msgMap[key]);
         }
     }
+
 });

@@ -22,6 +22,8 @@
                 <!-- <h5><a class="sidebar-item" href="{% url 'admin_panel' %}">Admin Panel</a></h5> -->
                 {% if user.is_superuser %}
                 <h5><a href="{% url 'admin_panel' %}">Admin Dashboard</a></h5>
+                {% else %}
+                <h5><a href="{% url 'update_user' user.id %}">Update User</a></h5>
                 {% endif %}
             </li>
         </ul>

@@ -6,5 +6,5 @@ from .models import *
 
 admin.site.register(SchoolYear)
 admin.site.register(Student)
-admin.site.register(Admin)
+# admin.site.register(Admin)
 admin.site.register(StudentGrade)

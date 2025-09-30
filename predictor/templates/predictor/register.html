@@ -1,20 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'predictor/main.html' %}
+{% block content %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
+<h2>Register New User</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Register</button>
+</form>
+<a href="{% url 'admin_panel' %}">Cancel</a>
 
-<body>
-    <h2>Register New User</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Register</button>
-    </form>
-    <a href="{% url 'login' %}">Back to login</a>
-</body>
-
-</html>
+{% endblock %}

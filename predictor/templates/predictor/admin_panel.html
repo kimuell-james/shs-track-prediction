@@ -9,8 +9,8 @@
         <div>
             <h4>User List</h4>
             <div>
-                <input type="text">
-                <button>Search</button>
+                <!-- <input type="text">
+                <button>Search</button> -->
                 <a href="{% url 'register' %}" type="button" class="btn btn-success">
                     Add User
                 </a>
@@ -21,25 +21,26 @@
                         <th>ID</th>
                         <th>Username</th>
                         <th>Email</th>
+                        <th>Last Name</th>
+                        <th>First Name</th>
 
                         <th>Update</th>
-                        <th>Delete</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for record in records %}
+                    {% for user in users %}
                     <tr>
-                        <td>{{admin.admin_id}}</td>
-                        <td>{{admin.username}}</td>
-                        <td>{{admin.email}}</td>
-                        <td><a href="">Update</a></td>
-                        <td><a href="">Delete</a></td>
+                        <td>{{user.id}}</td>
+                        <td>{{user.username}}</td>
+                        <td>{{user.email}}</td>
+                        <td>{{user.last_name}}</td>
+                        <td>{{user.first_name}}</td>
+                        <td><a href="{% url 'update_user' user.id %}">Update</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             <hr>
-            <a href="{% url 'admin_list' %}" class="btn btn-primary">See User List</a>
         </div>
     </div>
 </div>

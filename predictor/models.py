@@ -2,11 +2,11 @@ from django.db import models
 
 # Create your models here.
 
-class Admin(models.Model):
-    admin_id = models.AutoField(primary_key=True)
-    username = models.CharField(max_length=50)
-    password = models.CharField(max_length=50)  # Tip: Use Django's auth system instead
-    email = models.CharField(max_length=50)
+# class Admin(models.Model):
+#     admin_id = models.AutoField(primary_key=True)
+#     username = models.CharField(max_length=50)
+#     password = models.CharField(max_length=50)  # Tip: Use Django's auth system instead
+#     email = models.CharField(max_length=50)
     
 class SchoolYear(models.Model):
     sy_id = models.AutoField(primary_key=True)

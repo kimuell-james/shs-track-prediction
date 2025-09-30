@@ -18,6 +18,10 @@ from django.http import JsonResponse
 from django.urls import reverse
 from .predict_track import predict_track_for_student 
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score, roc_curve, ConfusionMatrixDisplay
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+from django import forms
 
 from .models import *
 from .forms import *
@@ -26,19 +30,16 @@ from .decorators import unauthenticated_user
 def admin_required(user):
     return user.is_superuser  # or user.is_staff depending on your design
 
+@user_passes_test(admin_required, login_url="/login/")
 def registerPage(request):
-    if not request.user.is_superuser:  # only superuser can register users
-        messages.error(request, "You do not have permission to register users.")
-        return redirect("login")
-
     if request.method == "POST":
-        form = RegisterForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "User created successfully!")
-            return redirect("login")
+            return redirect("admin_panel")  # go back to admin panel after success
     else:
-        form = RegisterForm()
+        form = CustomUserCreationForm()
+
     return render(request, "predictor/register.html", {"form": form})
 
 @unauthenticated_user
@@ -350,17 +351,71 @@ def modelEvaluation(request):
 
 @user_passes_test(admin_required, login_url="/login/")
 def adminPanel(request):
-    admin = Admin.objects.all()
+    users = User.objects.all().order_by("id")
 
-    context = {'admin': admin}
+    context = {'users': users}
 
     return render(request, 'predictor/admin_panel.html', context)
 
-@user_passes_test(admin_required, login_url="/login/")
-@login_required(login_url="/login/")
-def adminList(request):
-    admin = Admin.objects.all()
+class UserUpdateForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["username", "first_name", "last_name", "email", "is_active", "is_staff"]
 
-    context = {'admin': admin}
+    def __init__(self, *args, **kwargs):
+        current_user = kwargs.pop("current_user", None)  # pass logged-in user
+        super().__init__(*args, **kwargs)
 
-    return render(request, 'predictor/admin_list.html', context)
+        # If not superuser, hide staff/active fields
+        if not current_user or not current_user.is_superuser:
+            self.fields.pop("is_active")
+            self.fields.pop("is_staff")
+
+@login_required
+def updateUser(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+
+    # Restrict: Superuser can edit any user; normal users only themselves
+    if not request.user.is_superuser and request.user != user:
+        return redirect("admin_panel")
+
+    # Pass current_user to form so it knows what to hide
+    update_form = UserUpdateForm(request.POST or None, instance=user, current_user=request.user)
+
+    password_form = None
+    if request.user == user:
+        password_form = PasswordChangeForm(user, request.POST or None, prefix="pw")
+
+    if request.method == "POST":
+        if "update_profile" in request.POST and update_form.is_valid():
+            update_form.save()
+            return redirect("admin_panel")
+
+        if "change_password" in request.POST and password_form and password_form.is_valid():
+            user = password_form.save()
+            update_session_auth_hash(request, user)
+            return redirect("admin_panel")
+        
+    context = {'update_form': update_form, 'password_form': password_form, 'user_obj': user,}
+
+    return render(request, "predictor/update_user.html", context)
+
+def deleteUser(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    if request.method == "POST":
+        user.delete()
+        messages.success(request, "User deleted successfully!")
+        return redirect("admin_panel")
+    
+    context = {'user': user}
+
+    return render(request, "predictor/delete_user.html", context)
+
+# @user_passes_test(admin_required, login_url="/login/")
+# @login_required(login_url="/login/")
+# def adminList(request):
+#     admin = Admin.objects.all()
+
+#     context = {'admin': admin}
+
+#     return render(request, 'predictor/admin_list.html', context)

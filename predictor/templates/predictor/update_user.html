@@ -1,0 +1,22 @@
+{% extends 'predictor/main.html' %}
+{% block content %}
+
+<h2>Update User</h2>
+<form method="POST">
+    {% csrf_token %}
+    {{ update_form.as_p }}
+    <button type="submit" name="update_profile">Save Changes</button>
+</form>
+
+{% if password_form %}
+<h2>Change Password</h2>
+<form method="POST">
+    {% csrf_token %}
+    {{ password_form.as_p }}
+    <button type="submit" name="change_password">Change Password</button>
+</form>
+{% endif %}
+
+<a href="{% url 'admin_panel' %}">Cancel</a>
+
+{% endblock %}

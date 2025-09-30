@@ -19,12 +19,14 @@ class StudentGradesForm(forms.ModelForm):
         exclude = ['student_id']
         fields = '__all__'
 
-class RegisterForm(UserCreationForm):
+class CustomUserCreationForm(UserCreationForm):
+    first_name = forms.CharField(max_length=30, required=True)
+    last_name = forms.CharField(max_length=30, required=True)
     email = forms.EmailField(required=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password1', 'password2']
+        fields = ("username", "first_name", "last_name", "email", "password1", "password2")
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(max_length=150)
