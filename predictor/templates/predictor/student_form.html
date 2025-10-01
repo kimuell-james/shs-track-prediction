@@ -7,7 +7,7 @@
         <div class="row">
             <!-- Student Info -->
             <div class="col-md-4">
-                <h5>Student Information</h5>
+                <h4>Student Information</h4>
                 <p><strong>Student ID:</strong> {{ display_id }}</p>
                 {{ student_form.as_p }}
             </div>
@@ -66,7 +66,7 @@
 
         </div>
 
-        <a href="{% url 'students_record' %}" class="btn btn-primary">Back</a>
+        <a href="{% url 'student_record' %}" class="btn btn-primary">Back</a>
         {% if not readonly %}
         {% if is_add %}
         <!-- Add Student Button -->

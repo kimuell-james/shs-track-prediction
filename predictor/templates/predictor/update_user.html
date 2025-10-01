@@ -1,22 +1,47 @@
 {% extends 'predictor/main.html' %}
 {% block content %}
 
-<h2>Update User</h2>
-<form method="POST">
-    {% csrf_token %}
-    {{ update_form.as_p }}
-    <button type="submit" name="update_profile">Save Changes</button>
-</form>
+<div class="container mt-5" style="max-width: 600px;">
+    <!-- Update Profile Card -->
+    <div class="card shadow-sm border-0 mb-4 rounded-3">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Update User</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="POST">
+                {% csrf_token %}
+                {{ update_form.as_p }}
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="submit" name="update_profile" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-{% if password_form %}
-<h2>Change Password</h2>
-<form method="POST">
-    {% csrf_token %}
-    {{ password_form.as_p }}
-    <button type="submit" name="change_password">Change Password</button>
-</form>
-{% endif %}
+    <!-- Change Password Card -->
+    {% if password_form %}
+    <div class="card shadow-sm border-0 mb-4 rounded-3">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">Change Password</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="POST">
+                {% csrf_token %}
+                {{ password_form.as_p }}
+                <div class="d-flex justify-content-end mt-3">
+                    <button type="submit" name="change_password" class="btn btn-warning text-dark">
+                        Change Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
 
-<a href="{% url 'admin_panel' %}">Cancel</a>
+    <!-- Cancel Button -->
+    <div class="text-center">
+        <a href="{% url 'admin_panel' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+</div>
 
 {% endblock %}

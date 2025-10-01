@@ -11,7 +11,7 @@
             <div>
                 <!-- <input type="text">
                 <button>Search</button> -->
-                <a href="{% url 'register' %}" type="button" class="btn btn-success">
+                <a href="{% url 'register_user' %}" type="button" class="btn btn-success">
                     Add User
                 </a>
             </div>
@@ -35,7 +35,7 @@
                         <td>{{user.email}}</td>
                         <td>{{user.last_name}}</td>
                         <td>{{user.first_name}}</td>
-                        <td><a href="{% url 'update_user' user.id %}">Update</a></td>
+                        <td><a href="{% url 'update_user' user.id %}" class="btn btn-warning">Update</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -66,7 +66,7 @@
             </td>
             <td>
                 {% if not year.is_current %}
-                <a href="{% url 'set_current_year' year.sy_id %}">Set as Current</a>
+                <a href="{% url 'set_current_year' year.sy_id %}" class="btn btn-primary">Set as Current</a>
                 {% endif %}
             </td>
         </tr>

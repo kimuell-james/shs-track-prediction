@@ -30,18 +30,6 @@ from .decorators import unauthenticated_user
 def admin_required(user):
     return user.is_superuser  # or user.is_staff depending on your design
 
-@user_passes_test(admin_required, login_url="/login/")
-def registerPage(request):
-    if request.method == "POST":
-        form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect("admin_panel")  # go back to admin panel after success
-    else:
-        form = CustomUserCreationForm()
-
-    return render(request, "predictor/register.html", {"form": form})
-
 @unauthenticated_user
 def loginPage(request):
     if request.method == "POST":
@@ -79,7 +67,7 @@ def studentsRecord(request):
 
     context = {'records': records}
 
-    return render(request, 'predictor/students_record.html', context)
+    return render(request, 'predictor/student_record.html', context)
 
 @login_required(login_url="/login/")
 def addStudentRecord(request):
@@ -100,7 +88,7 @@ def addStudentRecord(request):
             grades.student_id = student
             grades.save()
 
-            return redirect(f"{reverse('students_record')}?msg=success")
+            return redirect(f"{reverse('student_record')}?msg=success")
         else:
             print("Add student - student_form errors:", student_form.errors)
             print("Add student - grades_form errors:", grades_form.errors)
@@ -151,14 +139,14 @@ def updateStudentRecord(request, pk):
             grades_form.save()
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'success': True})
-            return redirect(f"{reverse('students_record')}?msg=success")
+            return redirect(f"{reverse('student_record')}?msg=success")
         else:
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'errors': {
                     'student': student_form.errors,
                     'grades': grades_form.errors
                 }})
-            return redirect(f"{reverse('students_record')}?msg=error")
+            return redirect(f"{reverse('student_record')}?msg=error")
     
     # normal GET
     student_form = StudentForm(instance=student)
@@ -178,10 +166,10 @@ def deleteStudentRecord(request, pk):
         student.delete()
 
         messages.success(request, "Student record deleted successfully!")
-        return redirect(f"{reverse('students_record')}?msg=deleted")
+        return redirect(f"{reverse('student_record')}?msg=deleted")
 
     else:
-        return redirect(f"{reverse('students_record')}?msg=error")
+        return redirect(f"{reverse('student_record')}?msg=error")
 
 @login_required(login_url="/login/")
 def predictStudentTrack(request, pk):
@@ -198,8 +186,8 @@ def predictStudentTrack(request, pk):
     student.save()
 
     messages.success(request, f"Prediction complete: {predicted_label}")
-    # return redirect(f"{reverse('students_record')}?msg=success")
-    return redirect(f"{reverse('students_record')}?msg=success#student-{student.student_id}")
+    # return redirect(f"{reverse('student_record')}?msg=success")
+    return redirect(f"{reverse('student_record')}?msg=success#student-{student.student_id}")
 
 def plot_to_base64():
     buf = io.BytesIO()
@@ -371,6 +359,18 @@ class UserUpdateForm(forms.ModelForm):
         if not current_user or not current_user.is_superuser:
             self.fields.pop("is_active")
             self.fields.pop("is_staff")
+
+@user_passes_test(admin_required, login_url="/login/")
+def registerUser(request):
+    if request.method == "POST":
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("admin_panel")  # go back to admin panel after success
+    else:
+        form = CustomUserCreationForm()
+
+    return render(request, "predictor/register_user.html", {"form": form})
 
 @login_required
 def updateUser(request, user_id):

@@ -1,0 +1,90 @@
+/* Sidebar */
+.offcanvas.offcanvas-start {
+    width: 250px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    background-color: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    z-index: 1030;
+    padding: 1rem;
+}
+
+.nav-link {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    color: #2596be !important;
+    font-weight: 700;
+}
+
+.nav-link.active {
+    color: #2596be !important;
+    font-weight: 700;
+}
+
+#logout-btn {
+    color: white;
+    font-weight: 700;
+}
+
+/* Main Content */
+.main-content {
+    margin-left: 250px;
+    padding: 2rem;
+}
+
+/* Optional: Hide the close button
+.sidebar .btn-close {
+    display: none;
+} */
+
+/* Make form labels and inputs cleaner */
+form p {
+    margin-bottom: 1rem;
+}
+
+form label {
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+    display: block;
+}
+
+form input,
+form select,
+form textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+}
+
+form input:focus,
+form select:focus,
+form textarea:focus {
+    border-color: #0d6efd;
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+
+/* Toast alert messages*/
+.toast {
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast.hide,
+.toast:not(.show) {
+    transform: translateX(120%);
+    opacity: 0;
+}
