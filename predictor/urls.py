@@ -24,5 +24,6 @@ urlpatterns = [
     path("users/delete/<int:user_id>/", views.deleteUser, name="delete_user"),
     # path('admin_panel/admin_list/', views.adminList, name='admin_list'),
 
+    path("set_current_year/<int:sy_id>/", views.setCurrentYear, name="set_current_year"),
 
 ]

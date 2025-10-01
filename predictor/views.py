@@ -352,8 +352,9 @@ def modelEvaluation(request):
 @user_passes_test(admin_required, login_url="/login/")
 def adminPanel(request):
     users = User.objects.all().order_by("id")
+    school_years = SchoolYear.objects.all().order_by("-school_year")
 
-    context = {'users': users}
+    context = {'users': users, 'school_years': school_years}
 
     return render(request, 'predictor/admin_panel.html', context)
 
@@ -411,11 +412,14 @@ def deleteUser(request, user_id):
 
     return render(request, "predictor/delete_user.html", context)
 
-# @user_passes_test(admin_required, login_url="/login/")
-# @login_required(login_url="/login/")
-# def adminList(request):
-#     admin = Admin.objects.all()
+@user_passes_test(admin_required, login_url="/login/")
+def setCurrentYear(request, sy_id):
+    # Reset all years
+    SchoolYear.objects.update(is_current=False)
+    
+    # Set selected year as current
+    year = get_object_or_404(SchoolYear, pk=sy_id)
+    year.is_current = True
+    year.save()
 
-#     context = {'admin': admin}
-
-#     return render(request, 'predictor/admin_list.html', context)
+    return redirect("admin_panel")  # redirect back to your admin panel page

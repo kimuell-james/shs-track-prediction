@@ -8,9 +8,15 @@ class StudentForm(forms.ModelForm):
     class Meta:
         model = Student
         exclude = ['student_id']
+        fields = ["age", "gender", "sy", "grade_level", "predicted_track", "actual_track", "contributing_subjects"]  # include sy
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        try:
+            current_sy = SchoolYear.objects.get(is_current=True)
+            self.fields["sy"].initial = current_sy
+        except SchoolYear.DoesNotExist:
+            pass
 
 
 class StudentGradesForm(forms.ModelForm):

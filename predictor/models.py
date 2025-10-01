@@ -1,16 +1,17 @@
 from django.db import models
 
 # Create your models here.
-
-# class Admin(models.Model):
-#     admin_id = models.AutoField(primary_key=True)
-#     username = models.CharField(max_length=50)
-#     password = models.CharField(max_length=50)  # Tip: Use Django's auth system instead
-#     email = models.CharField(max_length=50)
     
 class SchoolYear(models.Model):
     sy_id = models.AutoField(primary_key=True)
-    school_year = models.CharField(max_length=50)
+    school_year = models.CharField(max_length=50, unique=True)
+    is_current = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if self.is_current:
+            # Reset all other years to False
+            SchoolYear.objects.exclude(pk=self.pk).update(is_current=False)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.school_year
@@ -28,9 +29,12 @@ class Student(models.Model):
     predicted_at = models.DateTimeField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        if not self.student_id:
-            last_student = Student.objects.order_by('-student_id').first()
-            self.student_id = (last_student.student_id + 1) if last_student else 1
+        # Assign the current school year if not set
+        if not self.sy_id:
+            current_sy = SchoolYear.objects.filter(is_current=True).first()
+            if current_sy:
+                self.sy = current_sy
+
         super().save(*args, **kwargs)
 
     class Meta:
