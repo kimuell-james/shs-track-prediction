@@ -2,14 +2,163 @@
 
 {% block content %}
 
-<h1>Dashboard</h1>
+<h1>📊 SHS Prediction Dashboard</h1>
 <hr>
-<h3>Data Statistics</h3>
-<h3>Predicted Track Distribution</h3>
-<h3>Actual Track Distribution</h3>
-<h3>Age distribution</h3>
-<h3>Gender distribution</h3>
-<h3>Feature Selection</h3>
-<h3>Grades Average for each track</h3>
 
+<!-- Summary -->
+<h3>Student Count for School Year {{ current_sy }}</h3>
+<div class="stats">
+    <p><b>Total Students:</b> {{ total_students }}</p>
+    <p><b>With Predicted Track:</b> {{ predicted_count }}</p>
+    <p><b>With Actual Track:</b> {{ actual_count }}</p>
+</div>
+<hr>
+
+<!-- Charts -->
+<h3>Track Distribution</h3>
+<div style="display: flex; gap: 20px; justify-content: space-around; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 300px;">
+        <canvas id="predictedChart"></canvas>
+    </div>
+    <div style="flex: 1; min-width: 300px;">
+        <canvas id="actualChart"></canvas>
+    </div>
+</div>
+<hr>
+
+<h3>Age Distribution</h3>
+<canvas id="ageChart"></canvas>
+<hr>
+
+<h3>Gender Distribution</h3>
+<canvas id="genderChart"></canvas>
+
+<!-- <h3>Student Data Description</h3>
+<div>
+    {{ desc_students|safe }}
+</div>
+
+<h3>Grades Data Description</h3>
+<div>
+    {{ desc_grades|safe }}
+</div> -->
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- DataTables.js -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+    // Parse data passed from Django
+    const predictedData = JSON.parse('{{ predicted_distribution|escapejs }}');
+    const actualData = JSON.parse('{{ actual_distribution|escapejs }}');
+    const genderData = JSON.parse('{{ gender_distribution|escapejs }}');
+    const ageData = JSON.parse('{{ age_distribution|escapejs }}');
+
+    const trackColors = {
+        "Unknown": "#A9A9A9",
+        "TVL": "#379145",
+        "Academic": "#36A2EB"
+    };
+
+    // Predicted Track Distribution (Pie)
+    new Chart(document.getElementById("predictedChart"), {
+        type: "pie",
+        data: {
+            labels: predictedData.map(d => d.predicted_track || "Unknown"),
+            datasets: [{
+                data: predictedData.map(d => d.count),
+                backgroundColor: predictedData.map(d => trackColors[d.predicted_track || "Unknown"] || "#CCCCCC")
+            }]
+        },
+        options: {
+            plugins: {
+                title: { display: true, text: "Predicted Track Distribution" }
+            }
+        }
+    });
+
+    // Actual Track Distribution (Pie)
+    new Chart(document.getElementById("actualChart"), {
+        type: "pie",
+        data: {
+            labels: actualData.map(d => d.actual_track || "Unknown"),
+            datasets: [{
+                data: actualData.map(d => d.count),
+                backgroundColor: actualData.map(d => trackColors[d.actual_track || "Unknown"] || "#CCCCCC")
+            }]
+        },
+        options: {
+            plugins: {
+                title: { display: true, text: "Actual Track Distribution" }
+            }
+        }
+    });
+
+    // Gender Distribution per Track (Bar)
+    const genderLabels = ["Academic", "TVL"];
+
+    // Build counts per gender per track safely
+    const maleCounts = genderLabels.map(track => {
+        const record = genderData.find(d => (d.actual_track || "Unknown") === track && d.gender === "Male");
+        return record ? record.count : 0;
+    });
+
+    const femaleCounts = genderLabels.map(track => {
+        const record = genderData.find(d => (d.actual_track || "Unknown") === track && d.gender === "Female");
+        return record ? record.count : 0;
+    });
+
+    // Create chart
+    new Chart(document.getElementById("genderChart"), {
+        type: "bar",
+        data: {
+            labels: genderLabels,
+            datasets: [
+                { label: "Male", data: maleCounts, backgroundColor: "#36A2EB" },   // Blue
+                { label: "Female", data: femaleCounts, backgroundColor: "#FF6384" } // Pink
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: { display: true, text: "Gender Distribution per Track" }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // Age Distribution per Track (Stacked Bar)
+    const ageLabels = [...new Set(ageData.map(d => d.age))];
+    const tracks = [...new Set(ageData.map(d => d.actual_track))];
+
+    const datasets = tracks.map((track, i) => {
+        return {
+            label: track,
+            data: ageLabels.map(age => {
+                const record = ageData.find(d => d.actual_track === track && d.age === age);
+                return record ? record.count : 0;
+            }),
+            backgroundColor: ["#36A2EB", "#FF6384", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"][i % 6]
+        }
+    });
+
+    new Chart(document.getElementById("ageChart"), {
+        type: "bar",
+        data: {
+            labels: ageLabels,
+            datasets: datasets
+        },
+        options: {
+            plugins: { title: { display: true, text: "Age Distribution per Track" } },
+            responsive: true,
+            scales: { x: { stacked: true }, y: { stacked: true } }
+        }
+    });
+</script>
 {% endblock %}

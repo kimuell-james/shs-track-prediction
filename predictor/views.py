@@ -8,6 +8,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import io, base64
 import numpy as np
+import json
 from django.forms import inlineformset_factory
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
@@ -22,6 +23,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.core.paginator import Paginator
 from django import forms
+from django.db.models import Count
 
 from .predict_track import predict_track_for_student 
 from .models import *
@@ -56,9 +58,65 @@ def logoutUser(request):
 
 @login_required(login_url="/login/")
 def home(request):
-    records = Student.objects.all()
 
-    context = {'records': records}
+    # Get current school year
+    current_sy = SchoolYear.objects.filter(is_current=True).first()
+
+    if not current_sy:
+        messages.error(request, "No active school year set.")
+        return render(request, 'predictor/dashboard.html', {})
+    
+    # Stats
+    total_students = Student.objects.filter(sy=current_sy).count()
+    predicted_count = Student.objects.filter(sy=current_sy, predicted_track__isnull=False).count()
+    actual_count = Student.objects.filter(sy=current_sy, actual_track__isnull=False).count()
+
+    # Distributions
+    # Distributions
+    predicted_distribution = (
+        Student.objects.filter(sy=current_sy)
+        .values("predicted_track")
+        .annotate(count=Count("predicted_track"))
+    )
+    actual_distribution = (
+        Student.objects.filter(sy=current_sy)
+        .values("actual_track")
+        .annotate(count=Count("actual_track"))
+    )
+    gender_distribution = (
+        Student.objects.filter(sy=current_sy)
+        .values("actual_track", "gender")
+        .annotate(count=Count("gender"))
+    )
+    age_distribution = (
+        Student.objects.filter(sy=current_sy)
+        .values("actual_track", "age")
+        .annotate(count=Count("age"))
+        .order_by("age")
+    )
+
+    # # Load data for describe()
+    # students = Student.objects.filter(sy=current_sy).values()
+    # grades = StudentGrade.objects.filter(student_id__sy=current_sy).values()
+
+    # df_students = pd.DataFrame(students)
+    # df_grades = pd.DataFrame(grades)
+
+    # desc_students = df_students[["age", "grade_level"]].describe().to_html(classes="table table-striped") if not df_students.empty else None
+    # desc_grades = df_grades.drop(columns=["grade_id", "student_id"]).describe().to_html(classes="table table-striped") if not df_grades.empty else None
+
+    context = {
+        "total_students": total_students,
+        "predicted_count": predicted_count,
+        "actual_count": actual_count,
+        "predicted_distribution": json.dumps(list(predicted_distribution)),
+        "actual_distribution": json.dumps(list(actual_distribution)),
+        "gender_distribution": json.dumps(list(gender_distribution)),
+        "age_distribution": json.dumps(list(age_distribution)),
+        # "desc_students": desc_students,
+        # "desc_grades": desc_grades,
+        "current_sy": current_sy.school_year,
+    }
 
     return render(request, 'predictor/dashboard.html', context)
 
@@ -209,17 +267,23 @@ def plot_to_base64():
 
 @login_required(login_url="/login/")
 def modelEvaluation(request):
+    # Active school year
+    current_sy = SchoolYear.objects.filter(is_current=True).first()
+    if not current_sy:
+        return render(request, 'predictor/model_evaluation.html', {"no_schoolyear": True})
+
     # Load model
     model_path = os.path.join(settings.BASE_DIR, 'predictor', 'ml_models', 'logreg_balanced.pkl')
     model = joblib.load(model_path)
 
-    # Students that have both actual and predicted tracks
-    students = Student.objects.exclude(actual_track__isnull=True).exclude(actual_track__exact="") \
+    # Students in active school year with actual & predicted tracks
+    students = Student.objects.filter(sy=current_sy) \
+        .exclude(actual_track__isnull=True).exclude(actual_track__exact="") \
         .exclude(predicted_track__isnull=True).exclude(predicted_track__exact="") \
         .values("student_id", "actual_track", "predicted_track", "age", "gender")
 
     if not students:
-        return render(request, 'predictor/model_evaluation.html', {"no_data": True})
+        return render(request, 'predictor/model_evaluation.html', {"no_data": True, "sy": current_sy})
 
     student_ids = [s["student_id"] for s in students]
 
@@ -237,7 +301,7 @@ def modelEvaluation(request):
     )
 
     if not grades:
-        return render(request, 'predictor/model_evaluation.html', {"no_data": True})
+        return render(request, 'predictor/model_evaluation.html', {"no_data": True, "sy": current_sy})
 
     # Convert to DataFrames
     df_students = pd.DataFrame(list(students))
@@ -286,7 +350,7 @@ def modelEvaluation(request):
     roc_auc = roc_auc_score(y_true_bin, y_pred_proba)
 
     # Confusion Matrix heatmap
-    plt.figure(figsize=(4, 3))
+    plt.figure(figsize=(8, 7))
     sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues",
                 xticklabels=["Academic", "TVL"], yticklabels=["Academic", "TVL"])
     plt.xlabel("Predicted")
@@ -295,7 +359,7 @@ def modelEvaluation(request):
 
     # ROC Curve
     fpr, tpr, _ = roc_curve(y_true_bin, y_pred_proba)
-    plt.figure(figsize=(4, 3))
+    plt.figure(figsize=(8, 7))
     plt.plot(fpr, tpr, label=f"ROC Curve (AUC = {roc_auc:.3f})")
     plt.plot([0, 1], [0, 1], linestyle="--", color="gray")
     plt.xlabel("False Positive Rate")
@@ -304,48 +368,23 @@ def modelEvaluation(request):
     plt.legend(loc="lower right")
     roc_base64 = plot_to_base64()
 
-    # Precision/Recall/F1 bar chart
-    for label, metrics in report.items():
-        if isinstance(metrics, dict):
-            if "f1-score" in metrics:
-                metrics["f1_score"] = metrics.pop("f1-score")
-
-    metrics_labels = []
-    precisions = []
-    recalls = []
-    f1s = []
-    for label, metrics in report.items():
-        if label not in ["accuracy", "macro avg", "weighted avg"]:
-            metrics_labels.append(label)
-            precisions.append(metrics["precision"])
-            recalls.append(metrics["recall"])
-            f1s.append(metrics["f1_score"])
-
-    x = range(len(metrics_labels))
-    plt.figure(figsize=(5, 3))
-    plt.bar(x, precisions, width=0.25, label="Precision")
-    plt.bar([i + 0.25 for i in x], recalls, width=0.25, label="Recall")
-    plt.bar([i + 0.5 for i in x], f1s, width=0.25, label="F1-Score")
-    plt.xticks([i + 0.25 for i in x], metrics_labels)
-    plt.ylim(0, 1)
-    plt.ylabel("Score")
-    plt.title("Classification Metrics")
-    plt.legend()
-    metrics_base64 = plot_to_base64()
+    for label, metrics in report.items(): 
+        if isinstance(metrics, dict): 
+            if "f1-score" in metrics: metrics["f1_score"] = metrics.pop("f1-score")
 
     context = {
         "count": count,
         "accuracy": round(accuracy * 100, 2),
         "roc_auc": round(roc_auc, 3),
-        "records": df.to_dict(orient="records"),
         "cm_base64": cm_base64,
         "roc_base64": roc_base64,
-        "metrics_base64": metrics_base64,
         "report": report,
         "no_data": False,
+        "current_sy": current_sy,  # pass school year to template
     }
 
     return render(request, "predictor/model_evaluation.html", context)
+
 
 @user_passes_test(admin_required, login_url="/login/")
 def adminPanel(request):

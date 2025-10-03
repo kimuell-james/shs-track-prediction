@@ -12,7 +12,7 @@
 }
 
 .username {
-    color: #2596be !important;
+    color: #379145 !important;
     font-weight: 700;
 }
 
@@ -22,12 +22,12 @@
 }
 
 .nav-link:hover {
-    color: #2596be !important;
+    color: #379145 !important;
     font-weight: 700;
 }
 
 .nav-link.active {
-    color: #2596be !important;
+    color: #379145 !important;
     font-weight: 700;
 }
 

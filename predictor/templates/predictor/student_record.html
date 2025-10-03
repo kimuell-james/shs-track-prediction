@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<h1>Student Record</h1>
+<h1>📋 Student Record</h1>
 <hr>
 <div>
     <!-- <input type="text">
@@ -31,7 +31,9 @@
                 <th>Predict Track</th>
                 <th>View</th>
                 <th>Update</th>
+                {% if user.is_superuser %}
                 <th>Delete</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
@@ -55,11 +57,13 @@
                 <td>
                     <a href="{% url 'update_record' record.student_id %}" class="btn btn-warning">Update</a>
                 </td>
+                {% if user.is_superuser %}
                 <td><!-- Delete button triggers modal -->
                     <button type="button" class="btn btn-danger deleteBtn" data-id="{{ record.student_id }}">
                         Delete
                     </button>
                 </td>
+                {% endif %}
 
             </tr>
             {% empty %}

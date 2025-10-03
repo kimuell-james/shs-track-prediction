@@ -2,30 +2,20 @@
 
 {% block content %}
 
-<h1>Model Evaluation</h1>
+<h1>📈 Model Evaluation</h1>
 <hr>
 
 {% if no_data %}
 <h3>No data available for evaluation.</h3>
 {% else %}
-
-<h3>Total records evaluated: <strong>{{ count }}</strong></h3>
-
+<h3>School Year: {{ current_sy }}</h3>
+<h3>Total records evaluated: {{ count }}</h3>
 <h3>Accuracy: {{ accuracy }}%</h3>
-
-<h3>Confusion Matrix</h3>
-<img src="data:image/png;base64,{{ cm_base64 }}" alt="Confusion Matrix" />
-
-<h3>ROC Curve</h3>
-<h5>ROC-AUC Score: <strong>{{ roc_auc }}</strong></h5>
-<img src="data:image/png;base64,{{ roc_base64 }}" alt="ROC Curve" />
+<hr>
 
 <h3>Classification Metrics</h3>
-<!-- Visualization -->
-<img src="data:image/png;base64,{{ metrics_base64 }}" alt="Metrics Bar Chart" />
-
 <!-- Table -->
-<table border="1" cellpadding="5">
+<table class="table" cellpadding="5">
     <tr>
         <th>Label</th>
         <th>Precision</th>
@@ -45,6 +35,19 @@
     {% endif %}
     {% endfor %}
 </table>
+<hr>
+
+<h3>Confusion Matrix</h3>
+<div class="text-center">
+    <img src="data:image/png;base64,{{ cm_base64 }}" class="img-fluid" alt="Confusion Matrix" />
+</div>
+<hr>
+
+<h3>ROC Curve</h3>
+<div class="text-center">
+    <h5>ROC-AUC Score: <strong>{{ roc_auc }}</strong></h5>
+    <img src="data:image/png;base64,{{ roc_base64 }}" class="img-fluid" alt="ROC Curve" />
+</div>
 
 {% endif %}
 {% endblock %}
