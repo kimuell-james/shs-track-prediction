@@ -1,0 +1,42 @@
+{% block content %}
+
+<div>
+    <h3>School Year</h3>
+    <a href="{% url 'add_school_year' %}" class="btn btn-success mb-3">+ Add School Year</a>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>School Year</th>
+                <th>Is Current?</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sy in school_years %}
+            <tr>
+                <td>{{ sy.sy_id }}</td>
+                <td>{{ sy.school_year }}</td>
+                <td>
+                    {% if sy.is_current %}
+                    ✅ Yes
+                    {% else %}
+                    ❌ No
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'edit_school_year' sy.sy_id %}" class="btn btn-primary btn-sm">Edit</a>
+                    <a href="{% url 'delete_school_year' sy.sy_id %}" class="btn btn-danger btn-sm">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No school years yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <hr>
+</div>
+
+{% endblock %}

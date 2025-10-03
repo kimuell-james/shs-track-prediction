@@ -5,14 +5,14 @@
 <div class="container mt-5" style="max-width: 500px;">
     <div class="card shadow-lg border-0 rounded-3">
         <div class="card-header bg-primary text-white text-center">
-            <h4 class="mb-0">Register New User</h4>
+            <h4 class="mb-0">Add School Year</h4>
         </div>
         <div class="card-body p-4">
             <form method="post">
                 {% csrf_token %}
                 {{ form.as_p }}
                 <div class="d-grid gap-2 mt-3">
-                    <button type="submit" class="btn btn-primary">Register</button>
+                    <button type="submit" class="btn btn-success">Add</button>
                     <a href="{% url 'admin_panel' %}" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>

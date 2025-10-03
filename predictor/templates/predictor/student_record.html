@@ -7,63 +7,113 @@
 <div>
     <!-- <input type="text">
     <button>Search</button> -->
+    {% if current_sy %}
+    <h3>Students for {{ current_sy.school_year }}</h3>
+    {% else %}
+    <h3>No active school year set</h3>
+    {% endif %}
     <a href="{% url 'add_record' %}" type="button" class="btn btn-success">
-        Add Student
+        + Add Student
     </a>
 </div>
 <div>
-    <div>
-        <div>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Age</th>
-                        <th>Gender</th>
-                        <th>Grade Level</th>
-                        <th>School year</th>
-                        <th>Predicted Track</th>
-                        <th>Actual Track</th>
-                        <th>Contributing Subject</th>
-                        <th>Predict Track</th>
-                        <th>View</th>
-                        <th>Update</th>
-                        <th>Delete</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for record in records %}
-                    <tr>
-                        <td>{{record.student_id}}</td>
-                        <td>{{record.age}}</td>
-                        <td>{{record.gender}}</td>
-                        <td>{{record.grade_level}}</td>
-                        <td>{{record.sy}}</td>
-                        <td>{{ record.predicted_track|default:"—" }}</td>
-                        <td>{{record.actual_track}}</td>
-                        <td>{{ record.contributing_subjects|default:"—" }}</td>
-                        <td id="student-{{ record.student_id }}">
-                            <a href="{% url 'predict_track' record.student_id %}#student-{{ record.student_id }}"
-                                class="btn btn-primary">Predict</a>
-                        </td>
-                        <td>
-                            <a href="{% url 'view_record' record.student_id %}" class="btn btn-secondary">View</a>
-                        </td>
-                        <td>
-                            <a href="{% url 'update_record' record.student_id %}" class="btn btn-warning">Update</a>
-                        </td>
-                        <td><!-- Delete button triggers modal -->
-                            <button type="button" class="btn btn-danger deleteBtn" data-id="{{ record.student_id }}">
-                                Delete
-                            </button>
-                        </td>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Grade Level</th>
+                <th>School year</th>
+                <th>Predicted Track</th>
+                <th>Actual Track</th>
+                <th>Contributing Subject</th>
+                <th>Predict Track</th>
+                <th>View</th>
+                <th>Update</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in page_obj %}
+            <tr>
+                <td>{{record.student_id}}</td>
+                <td>{{record.age}}</td>
+                <td>{{record.gender}}</td>
+                <td>{{record.grade_level}}</td>
+                <td>{{record.sy}}</td>
+                <td>{{ record.predicted_track|default:"—" }}</td>
+                <td>{{record.actual_track}}</td>
+                <td>{{ record.contributing_subjects|default:"—" }}</td>
+                <td id="student-{{ record.student_id }}">
+                    <a href="{% url 'predict_track' record.student_id %}#student-{{ record.student_id }}"
+                        class="btn btn-primary">Predict</a>
+                </td>
+                <td>
+                    <a href="{% url 'view_record' record.student_id %}" class="btn btn-secondary">View</a>
+                </td>
+                <td>
+                    <a href="{% url 'update_record' record.student_id %}" class="btn btn-warning">Update</a>
+                </td>
+                <td><!-- Delete button triggers modal -->
+                    <button type="button" class="btn btn-danger deleteBtn" data-id="{{ record.student_id }}">
+                        Delete
+                    </button>
+                </td>
 
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No students found for this school year.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination controls -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">First</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">First</span>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+            </li>
+            {% endif %}
+
+            <!-- Current page info -->
+            <li class="page-item disabled">
+                <span class="page-link">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Next</span>
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link">Last</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+
 </div>
 
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">

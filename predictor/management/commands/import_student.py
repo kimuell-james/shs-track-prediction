@@ -10,14 +10,17 @@ class Command(BaseCommand):
     help = 'Import student data and grades from CSV'
 
     def handle(self, *args, **kwargs):
-        # csv_path = os.path.join('shs_track_prediction', 'data', 'shs_prediction_testset.csv')
-        csv_path = Path(settings.BASE_DIR) / 'data' / 'shs_prediction_testset.csv'
+        # csv_path = os.path.join('shs_track_prediction', 'data', 'csv file here')
+        csv_path = Path(settings.BASE_DIR) / 'data' / 'shs-data-trainset.csv'
 
-        sy_obj, _ = SchoolYear.objects.get_or_create(school_year="2023-2024")
+        # Get the current active school year
+        sy_obj = SchoolYear.objects.filter(is_current=True).first()
 
-        with open(csv_path, newline='', encoding='utf-8') as csvfile:
+        with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
             reader = csv.DictReader(csvfile, delimiter=',')  
-
+            for row in reader:
+                print(row.keys())  # shows all column names from CSV
+                break
             for row in reader:
                 student = Student.objects.create(
                     age=int(row['age']),
@@ -26,7 +29,7 @@ class Command(BaseCommand):
                     sy=sy_obj,
                     actual_track=row['track'],        # Keep this; it's the only available value
                     predicted_track=None,             # Set as None for now
-                    important_subject=None,
+                    contributing_subjects=None,
                     created_at=datetime.now(),
                     predicted_at=None
                 )

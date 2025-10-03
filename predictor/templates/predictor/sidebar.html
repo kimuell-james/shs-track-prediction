@@ -5,11 +5,11 @@
 
     <div class="offcanvas-header flex-column align-items-center">
         <!-- Logo -->
-        <img src="{% static 'images/shs_logo.png' %}" alt="Logo" width="100" height="100"
+        <img src="{% static 'images/shs_logo_nobg.png' %}" alt="Logo" width="100" height="100"
             class="d-inline-block align-text-top mb-2">
 
         <!-- Username -->
-        <h5 class="text-center">Hello, {{ user.username }}!</h5>
+        <h5 class="text-center username">Hello, {{ user.username }}!</h5>
     </div>
 
     <!-- Navs -->
@@ -23,7 +23,7 @@
             </li>
 
             <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'student_record' %}active{% endif %}"
+                <a class="nav-link {% if request.resolver_match.url_name in 'student_record add_record view_record update_record delete_record predict_track'%}active{% endif %}"
                     href="{% url 'student_record' %}">
                     Student Record
                 </a>
@@ -39,7 +39,7 @@
             <li class="nav-item">
                 {% if user.is_superuser %}
                 <a class="nav-link 
-                  {% if request.resolver_match.url_name in 'admin_panel register_user update_user' %}active{% endif %}"
+                  {% if request.resolver_match.url_name in 'admin_panel register_user update_user add_school_year edit_school_year delete_school_year set_current_year' %}active{% endif %}"
                     href="{% url 'admin_panel' %}">
                     Admin Dashboard
                 </a>

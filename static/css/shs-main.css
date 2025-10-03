@@ -11,6 +11,11 @@
     padding: 1rem;
 }
 
+.username {
+    color: #2596be !important;
+    font-weight: 700;
+}
+
 .nav-link {
     font-size: 18px;
     font-weight: 500;
@@ -28,6 +33,12 @@
 
 #logout-btn {
     color: white;
+    font-weight: 700;
+}
+
+#logout-btn:hover {
+    color: white;
+    background-color: red;
     font-weight: 700;
 }
 
@@ -69,7 +80,6 @@ form textarea:focus {
     outline: none;
     box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
-
 
 /* Toast alert messages*/
 .toast {

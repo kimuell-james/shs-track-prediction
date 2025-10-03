@@ -16,13 +16,14 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.http import JsonResponse
 from django.urls import reverse
-from .predict_track import predict_track_for_student 
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score, roc_curve, ConfusionMatrixDisplay
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
+from django.core.paginator import Paginator
 from django import forms
 
+from .predict_track import predict_track_for_student 
 from .models import *
 from .forms import *
 from .decorators import unauthenticated_user
@@ -63,9 +64,18 @@ def home(request):
 
 @login_required(login_url="/login/")
 def studentsRecord(request):
-    records = Student.objects.all()
+    current_sy = SchoolYear.objects.filter(is_current=True).first()
 
-    context = {'records': records}
+    if current_sy:
+        records = Student.objects.filter(sy_id=current_sy).order_by("student_id")
+    else:
+        records = Student.objects.none()  # no records if no active SY set
+
+    paginator = Paginator(records, 50)  # 50 records per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {'records': records, "page_obj": page_obj, "current_sy": current_sy}
 
     return render(request, 'predictor/student_record.html', context)
 
@@ -401,6 +411,7 @@ def updateUser(request, user_id):
 
     return render(request, "predictor/update_user.html", context)
 
+@user_passes_test(admin_required, login_url="/login/")
 def deleteUser(request, user_id):
     user = get_object_or_404(User, id=user_id)
     if request.method == "POST":
@@ -411,6 +422,46 @@ def deleteUser(request, user_id):
     context = {'user': user}
 
     return render(request, "predictor/delete_user.html", context)
+
+@user_passes_test(admin_required, login_url="/login/")
+def school_year_list(request):
+    school_years = SchoolYear.objects.all().order_by("-sy_id")
+    return render(request, "predictor/school_year_list.html", {"school_years": school_years})
+
+@user_passes_test(admin_required, login_url="/login/")
+def add_school_year(request):
+    if request.method == "POST":
+        form = SchoolYearForm(request.POST)
+        if form.is_valid():
+            if form.cleaned_data.get("is_current"):
+                SchoolYear.objects.update(is_current=False)  # reset others
+            form.save()
+            return redirect("admin_panel")
+    else:
+        form = SchoolYearForm()
+    return render(request, "predictor/add_school_year.html", {"form": form})
+
+@user_passes_test(admin_required, login_url="/login/")
+def edit_school_year(request, pk):
+    sy = get_object_or_404(SchoolYear, pk=pk)
+    if request.method == "POST":
+        form = SchoolYearForm(request.POST, instance=sy)
+        if form.is_valid():
+            if form.cleaned_data.get("is_current"):
+                SchoolYear.objects.update(is_current=False)
+            form.save()
+            return redirect("admin_panel")
+    else:
+        form = SchoolYearForm(instance=sy)
+    return render(request, "predictor/edit_school_year.html", {"form": form, "sy": sy})
+
+@user_passes_test(admin_required, login_url="/login/")
+def delete_school_year(request, pk):
+    sy = get_object_or_404(SchoolYear, pk=pk)
+    if request.method == "POST":
+        sy.delete()
+        return redirect("admin_panel")
+    return render(request, "predictor/delete_school_year.html", {"sy": sy})
 
 @user_passes_test(admin_required, login_url="/login/")
 def setCurrentYear(request, sy_id):

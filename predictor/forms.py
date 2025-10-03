@@ -4,6 +4,11 @@ from django.forms import ModelForm
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 
+class SchoolYearForm(forms.ModelForm):
+    class Meta:
+        model = SchoolYear
+        fields = ["school_year", "is_current"]
+        
 class StudentForm(forms.ModelForm):
     class Meta:
         model = Student

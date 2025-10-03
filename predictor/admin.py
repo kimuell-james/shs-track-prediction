@@ -15,6 +15,8 @@ class StudentAdmin(admin.ModelAdmin):
     list_display = ("student_id", "age", "gender", "grade_level", "predicted_track", "actual_track", "sy")
     search_fields = ("student_id", "actual_track", "predicted_track")
     list_filter = ("grade_level", "sy")
+    list_per_page = 50   # 🔹 Show only 50 students per page
+    # list_max_show_all = 100  # 🔹 Max when "Show all" is clicked
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)

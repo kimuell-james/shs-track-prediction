@@ -1,0 +1,36 @@
+<div>
+    <h3>User List</h3>
+    <div>
+        <!-- <input type="text">
+                <button>Search</button> -->
+        <a href="{% url 'register_user' %}" type="button" class="btn btn-success">
+            + Add User
+        </a>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Last Name</th>
+                <th>First Name</th>
+
+                <th>Update</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{user.id}}</td>
+                <td>{{user.username}}</td>
+                <td>{{user.email}}</td>
+                <td>{{user.last_name}}</td>
+                <td>{{user.first_name}}</td>
+                <td><a href="{% url 'update_user' user.id %}" class="btn btn-warning">Update</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <hr>
+</div>

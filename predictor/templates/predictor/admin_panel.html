@@ -5,72 +5,13 @@
 <h1>Admin Panel</h1>
 <hr>
 <div>
-    <div>
-        <div>
-            <h4>User List</h4>
-            <div>
-                <!-- <input type="text">
-                <button>Search</button> -->
-                <a href="{% url 'register_user' %}" type="button" class="btn btn-success">
-                    Add User
-                </a>
-            </div>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Last Name</th>
-                        <th>First Name</th>
-
-                        <th>Update</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in users %}
-                    <tr>
-                        <td>{{user.id}}</td>
-                        <td>{{user.username}}</td>
-                        <td>{{user.email}}</td>
-                        <td>{{user.last_name}}</td>
-                        <td>{{user.first_name}}</td>
-                        <td><a href="{% url 'update_user' user.id %}" class="btn btn-warning">Update</a></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <hr>
-        </div>
-    </div>
+    {% include 'predictor/user_list.html' %}
 </div>
 <div>
-    <h4>Set School Year</h4>
-    <table class="table">
-        <tr>
-            <th>ID</th>
-            <th>Year</th>
-            <th>Current?</th>
-            <th>Action</th>
-        </tr>
-        {% for year in school_years %}
-        <tr>
-            <td>{{ year.sy_id }}</td>
-            <td>{{ year.school_year }}</td>
-            <td>
-                {% if year.is_current %}
-                ✅ Current
-                {% else %}
-                ❌
-                {% endif %}
-            </td>
-            <td>
-                {% if not year.is_current %}
-                <a href="{% url 'set_current_year' year.sy_id %}" class="btn btn-primary">Set as Current</a>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+    {% include 'predictor/school_year_list.html' %}
 </div>
+<div>
+    <h3>Train Model</h3>
+</div>
+
 {% endblock %}
