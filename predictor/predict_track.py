@@ -68,22 +68,25 @@ def predict_track_for_student(student, grades):
     model_path = os.path.join(model_dir, active_model.model_filename)
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"⚠️ Model file not found at {model_path}. Please retrain the model.")
-    
+    scaler_path = os.path.join(model_dir, f"{active_model.model_filename}_scaler.pkl")
     columns_path = os.path.join(model_dir, f"{active_model.model_filename}_columns.pkl")
 
     model = joblib.load(model_path)
+    scaler = joblib.load(scaler_path)
     training_columns = joblib.load(columns_path)
 
     # --- Prepare input data ---
     input_df = pd.DataFrame([input_dict])
+    input_df["gender"] = input_df["gender"].map({"Male":1, "Female":0})
 
-    # ✅ One-hot encode and align with training columns
-    input_df = pd.get_dummies(input_df)
+    # Align columns and fill missing ones
     input_df = input_df.reindex(columns=training_columns, fill_value=0)
 
-    # Predict
-    prediction = model.predict(input_df)[0]
+    # Scale
+    input_scaled = scaler.transform(input_df)
 
+    # Predict
+    prediction = model.predict(input_scaled)[0]
     track_map = {0: "Academic", 1: "TVL"}
     predicted_label = track_map.get(prediction, "Unknown")
 

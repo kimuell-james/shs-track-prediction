@@ -32,7 +32,7 @@ from .train_model import train_model
 from .decorators import unauthenticated_user
 
 def admin_required(user):
-    return user.is_superuser  # or user.is_staff depending on your design
+    return user.is_superuser
 
 @unauthenticated_user
 def loginPage(request):
@@ -44,17 +44,19 @@ def loginPage(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                messages.success(request, f"Welcome {username}!")
-                return redirect("home")  # change to your homepage
+                return redirect("home")  
             else:
-                messages.error(request, "Invalid username or password.")
+                return redirect("login")
     else:
         form = LoginForm()
-    return render(request, "predictor/login.html", {"form": form})
 
+    context = {'form': form}
+
+    return render(request, "predictor/login.html", context)
+
+@login_required(login_url="/login/")
 def logoutUser(request):
     logout(request)
-    messages.info(request, "Logged out successfully.")
     return redirect("login")
 
 @login_required(login_url="/login/")
@@ -64,7 +66,7 @@ def home(request):
     current_sy = SchoolYear.objects.filter(is_current=True).first()
 
     if not current_sy:
-        messages.error(request, "No active school year set.")
+        messages.info(request, "No active school year set.")
         return render(request, 'predictor/dashboard.html', {})
     
     # Stats
@@ -128,13 +130,14 @@ def studentsRecord(request):
     if current_sy:
         records = Student.objects.filter(sy_id=current_sy).order_by("student_id")
     else:
+        messages.info(request, "No active school year set.")
         records = Student.objects.none()  # no records if no active SY set
 
     paginator = Paginator(records, 50)  # 50 records per page
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    context = {'records': records, "page_obj": page_obj, "current_sy": current_sy}
+    context = {"records": records, "page_obj": page_obj, "current_sy": current_sy}
 
     return render(request, 'predictor/student_record.html', context)
 
@@ -157,10 +160,22 @@ def addStudentRecord(request):
             grades.student_id = student
             grades.save()
 
-            return redirect(f"{reverse('student_record')}?msg=success")
+            messages.success(request, "Student record added successfully!")
+            return redirect("student_record")
         else:
-            print("Add student - student_form errors:", student_form.errors)
-            print("Add student - grades_form errors:", grades_form.errors)
+            for form in [student_form, grades_form]:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"{field.capitalize()}: {error}")
+
+            # print("Add student - student_form errors:", student_form.errors)
+            # print("Add student - grades_form errors:", grades_form.errors)
+
+            return render(request, 'your_template.html', {
+                'student_form': student_form,
+                'grades_form': grades_form
+            })
+            
 
     else:
         student_form = StudentForm()
@@ -206,16 +221,18 @@ def updateStudentRecord(request, pk):
         if student_form.is_valid() and grades_form.is_valid():
             student_form.save()
             grades_form.save()
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': True})
-            return redirect(f"{reverse('student_record')}?msg=success")
+            messages.success(request, f"Student {pk} record updated successfully!")
+            return redirect("student_record")
         else:
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': False, 'errors': {
-                    'student': student_form.errors,
-                    'grades': grades_form.errors
-                }})
-            return redirect(f"{reverse('student_record')}?msg=error")
+            for form in [student_form, grades_form]:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"{field.capitalize()}: {error}")
+
+            return render(request, 'your_template.html', {
+                'student_form': student_form,
+                'grades_form': grades_form
+            })
     
     # normal GET
     student_form = StudentForm(instance=student)
@@ -235,10 +252,11 @@ def deleteStudentRecord(request, pk):
         student.delete()
 
         messages.success(request, "Student record deleted successfully!")
-        return redirect(f"{reverse('student_record')}?msg=deleted")
+        return redirect("student_record")
 
     else:
-        return redirect(f"{reverse('student_record')}?msg=error")
+        messages.error(request, "Failed to delete student record!")
+        return redirect("student_record")
 
 @login_required(login_url="/login/")
 def predictStudentTrack(request, pk):
@@ -254,9 +272,10 @@ def predictStudentTrack(request, pk):
     student.contributing_subjects = ", ".join(subject_names)  # safe now
     student.save()
 
-    messages.success(request, f"Prediction complete: {predicted_label}")
-    # return redirect(f"{reverse('student_record')}?msg=success")
-    return redirect(f"{reverse('student_record')}?msg=success#student-{student.student_id}")
+    # messages.success(request, f"Prediction complete: {predicted_label}")
+
+    messages.success(request, f"Prediction complete: Student {pk} - {predicted_label}")
+    return redirect("student_record")
 
 def plot_to_base64():
     buf = io.BytesIO()
@@ -271,6 +290,7 @@ def modelEvaluation(request):
     # Active school year
     current_sy = SchoolYear.objects.filter(is_current=True).first()
     if not current_sy:
+        messages.info(request, "No active school year set.")
         return render(request, 'predictor/model_evaluation.html', {"no_schoolyear": True})
 
     # Load model
@@ -417,7 +437,9 @@ def registerUser(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect("admin_panel")  # go back to admin panel after success
+            messages.success(request, "User added successfully!")
+            return redirect("admin_panel")
+
     else:
         form = CustomUserCreationForm()
 
@@ -431,6 +453,7 @@ def updateUser(request, user_id):
     if not request.user.is_superuser and request.user != user:
         return redirect("admin_panel")
 
+
     # Pass current_user to form so it knows what to hide
     update_form = UserUpdateForm(request.POST or None, instance=user, current_user=request.user)
 
@@ -441,11 +464,13 @@ def updateUser(request, user_id):
     if request.method == "POST":
         if "update_profile" in request.POST and update_form.is_valid():
             update_form.save()
+            messages.success(request, f"User {user} profile updated successfully!")
             return redirect("admin_panel")
 
         if "change_password" in request.POST and password_form and password_form.is_valid():
             user = password_form.save()
             update_session_auth_hash(request, user)
+            messages.success(request, f"User {user} password updated successfully!")
             return redirect("admin_panel")
         
     context = {'update_form': update_form, 'password_form': password_form, 'user_obj': user,}
@@ -480,6 +505,7 @@ def add_school_year(request):
             if form.cleaned_data.get("is_current"):
                 SchoolYear.objects.update(is_current=False)  # reset others
             form.save()
+            messages.success(request, "School Year added successfully!")
             return redirect("admin_panel")
     else:
         form = SchoolYearForm()
@@ -494,6 +520,7 @@ def edit_school_year(request, pk):
             if form.cleaned_data.get("is_current"):
                 SchoolYear.objects.update(is_current=False)
             form.save()
+            messages.success(request, "School Year detail updated successfully!")
             return redirect("admin_panel")
     else:
         form = SchoolYearForm(instance=sy)
@@ -504,6 +531,7 @@ def delete_school_year(request, pk):
     sy = get_object_or_404(SchoolYear, pk=pk)
     if request.method == "POST":
         sy.delete()
+        messages.success(request, "School Year deleted successfully!")
         return redirect("admin_panel")
     context = {'sy':sy}
     return render(request, "predictor/delete_school_year.html", context)
@@ -518,7 +546,9 @@ def setCurrentYear(request, sy_id):
     year.is_current = True
     year.save()
 
-    return redirect("admin_panel")  # redirect back to your admin panel page
+    messages.success(request, f"School Year set to {year}")
+
+    return redirect("admin_panel") 
 
 @user_passes_test(admin_required, login_url="/login/")
 def trainModel(request):
@@ -528,7 +558,7 @@ def trainModel(request):
             messages.success(request, result_message)
         except Exception as e:
             messages.error(request, f"❌ Training failed: {e}")
-        return redirect("admin_panel")  # Redirect back to same page after training
+        return redirect("admin_panel") 
 
     # Handle GET — show model info table
     models = ModelTrainingHistory.objects.all().order_by('-trained_at')

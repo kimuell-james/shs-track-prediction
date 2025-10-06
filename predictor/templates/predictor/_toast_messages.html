@@ -1,0 +1,33 @@
+{% if messages %}
+<!-- Toast Container (Top Right) -->
+<div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index:2000;"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const container = document.getElementById("toastContainer");
+
+        {% for message in messages %}
+        // Determine type
+        const type = "{% if 'success' in message.tags %}success{% elif 'error' in message.tags %}danger{% elif 'warning' in message.tags %}warning{% else %}info{% endif %}";
+
+        // Create toast element
+        const toast = document.createElement("div");
+        toast.className = `toast align-items-center text-bg-${type} border-0 shadow-lg`;
+        toast.role = "alert";
+        toast.ariaLive = "assertive";
+        toast.ariaAtomic = "true";
+
+        toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="toast-icon bi fs-4 me-3"></i>
+            <div class="toast-body flex-grow-1">{{ message|escapejs }}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>`;
+
+        // Append and show
+        container.appendChild(toast);
+        new bootstrap.Toast(toast, { delay: 3500 }).show();
+        {% endfor %}
+    });
+</script>
+{% endif %}

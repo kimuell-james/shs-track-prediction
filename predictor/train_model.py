@@ -3,28 +3,23 @@ import pandas as pd
 import joblib
 from datetime import datetime
 from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import accuracy_score, classification_report
 from django.conf import settings
 from predictor.models import Student, StudentGrade, SchoolYear, ModelTrainingHistory
 
 def train_model():
-    """
-    Trains a logistic regression model using ALL available school year data
-    (up to the current one) and saves the model named after the CURRENT school year.
-    """
-
-    # ✅ Get the current school year
+    # Get current school year
     current_sy = SchoolYear.objects.filter(is_current=True).first()
     if not current_sy:
         return "⚠️ No current school year set!"
 
-    # ✅ Collect all students with complete data
+    # Collect all students with complete data
     students = Student.objects.filter(actual_track__isnull=False)
     if not students.exists():
-        return "⚠️ No students found with both actual and predicted tracks."
+        return "⚠️ No students found with actual tracks."
 
-    # ✅ Combine all student records from all years
+    # Combine student records
     data = []
     for student in students:
         grades = StudentGrade.objects.filter(student_id=student).first()
@@ -71,37 +66,42 @@ def train_model():
     if df.empty:
         return "⚠️ No valid grade records found."
 
-    # ✅ Preprocessing
+    # Preprocessing
     X = df.drop(columns=["actual_track"], errors="ignore")
     y = df["actual_track"]
 
-    X = pd.get_dummies(X)
+    # Encode gender
+    X["gender"] = X["gender"].map({"Male":1, "Female":0})
+
+    # Save feature columns before scaling
+    feature_columns = X.columns.tolist()
+
+    # Standardize numeric features
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    # Encode target
     le = LabelEncoder()
     y_encoded = le.fit_transform(y)
 
-    # ✅ Train model using *entire dataset*
-    model = LogisticRegression(max_iter=1000, class_weight="balanced")
-    model.fit(X, y_encoded)
+    # Train Logistic Regression
+    model = LogisticRegression(max_iter=3000, class_weight="balanced")
+    model.fit(X_scaled, y_encoded)
 
-    y_pred = model.predict(X)
+    # Training metrics
+    y_pred = model.predict(X_scaled)
     training_accuracy = accuracy_score(y_encoded, y_pred)
-    # print(classification_report(y_encoded, y_pred))
-
-    # (optional) classification_report for admin logging
     report = classification_report(y_encoded, y_pred)
 
-    # ✅ Save model (name based on CURRENT school year)
-    model_filename = f"shs_track_insight_model_{current_sy.school_year.replace(' ', '').replace('-', '_')}.pkl"
+    # Save model & scaler
     model_dir = os.path.join(settings.BASE_DIR, "predictor", "ml_models")
     os.makedirs(model_dir, exist_ok=True)
-    model_path = os.path.join(model_dir, model_filename)
-    joblib.dump(model, model_path)
+    model_filename = f"shs_track_insight_model_{current_sy.school_year.replace(' ','').replace('-','_')}.pkl"
+    joblib.dump(model, os.path.join(model_dir, model_filename))
+    joblib.dump(scaler, os.path.join(model_dir, f"{model_filename}_scaler.pkl"))
+    joblib.dump(feature_columns, os.path.join(model_dir, f"{model_filename}_columns.pkl"))
 
-    # ✅ Save the feature columns used for training
-    columns_path = os.path.join(model_dir, f"{model_filename}_columns.pkl")
-    joblib.dump(X.columns.tolist(), columns_path)
-
-    # ✅ Log training in ModelTrainingHistory
+    # Log training
     new_model = ModelTrainingHistory.objects.create(
         school_year=current_sy,
         model_filename=model_filename,
@@ -111,4 +111,4 @@ def train_model():
     )
     ModelTrainingHistory.objects.exclude(pk=new_model.pk).update(is_active=False)
 
-    return f"✅ Model trained successfully for {current_sy.school_year} (Accuracy: {training_accuracy:.2%}) and set as Active model."
+    return f"Model trained successfully for {current_sy.school_year} (Accuracy: {training_accuracy:.2%})"
