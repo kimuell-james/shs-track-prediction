@@ -28,6 +28,7 @@ from django.db.models import Count
 from .predict_track import predict_track_for_student 
 from .models import *
 from .forms import *
+from .train_model import train_model
 from .decorators import unauthenticated_user
 
 def admin_required(user):
@@ -507,9 +508,22 @@ def setCurrentYear(request, sy_id):
     # Reset all years
     SchoolYear.objects.update(is_current=False)
     
-    # Set selected year as current
+    # Set selected year as current 
     year = get_object_or_404(SchoolYear, pk=sy_id)
     year.is_current = True
     year.save()
 
     return redirect("admin_panel")  # redirect back to your admin panel page
+
+@user_passes_test(admin_required, login_url="/login/")
+def trainModel(request):
+    if request.method == 'POST':
+        try:
+            result_message = train_model()
+            messages.success(request, result_message)
+        except Exception as e:
+            messages.error(request, f"❌ Training failed: {e}")
+        return redirect('admin_panel') 
+    else:
+        messages.warning(request, "Invalid request method.")
+        return redirect('admin_panel')

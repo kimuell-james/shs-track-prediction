@@ -4,14 +4,19 @@
 
 <h1>👤 Admin Panel</h1>
 <hr>
-<div>
-    {% include 'predictor/user_list.html' %}
-</div>
+
 <div>
     {% include 'predictor/school_year_list.html' %}
 </div>
+<hr>
+
 <div>
-    <h3>Train Model</h3>
+    {% include 'predictor/train_model.html' %}
+</div>
+<hr>
+
+<div>
+    {% include 'predictor/user_list.html' %}
 </div>
 
 {% endblock %}

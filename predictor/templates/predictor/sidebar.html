@@ -39,7 +39,7 @@
             <li class="nav-item">
                 {% if user.is_superuser %}
                 <a class="nav-link 
-                  {% if request.resolver_match.url_name in 'admin_panel register_user update_user add_school_year edit_school_year delete_school_year set_current_year' %}active{% endif %}"
+                  {% if request.resolver_match.url_name in 'admin_panel register_user update_user add_school_year edit_school_year delete_school_year set_current_year train_model' %}active{% endif %}"
                     href="{% url 'admin_panel' %}">
                     Admin Dashboard
                 </a>
