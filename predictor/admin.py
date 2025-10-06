@@ -1,14 +1,21 @@
-from django.contrib import admin
-
-# Register your models here.
-
+from django.contrib import admin, messages
 from .models import *
+from .train_model import train_model
 
 @admin.register(SchoolYear)
 class SchoolYearAdmin(admin.ModelAdmin):
     list_display = ("sy_id", "school_year", "is_current")
     list_editable = ("is_current",)
     ordering = ("-sy_id",)
+
+    @admin.action(description="Train Model for Current School Year")
+    def train_model_action(self, request, queryset):
+        # You can trigger training directly here
+        result_message = train_model()
+        if result_message.startswith("✅"):
+            self.message_user(request, result_message, level=messages.SUCCESS)
+        else:
+            self.message_user(request, result_message, level=messages.WARNING)
 
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
@@ -55,6 +62,12 @@ class StudentGradeAdmin(admin.ModelAdmin):
     )
     search_fields = ("student_id__student_id",)  # allows search by student_id
     list_filter = ("student_id__sy", "student_id__grade_level")  # filter by school year or grade level
+
+@admin.register(ModelTrainingHistory)
+class ModelTrainingHistoryAdmin(admin.ModelAdmin):
+    list_display = ('model_filename', 'school_year', 'accuracy', 'trained_at')
+    search_fields = ('model_filename', 'school_year')
+    list_filter = ('school_year', 'trained_at')
 
 # admin.site.register(SchoolYear)
 # admin.site.register(Student, StudentAdmin)

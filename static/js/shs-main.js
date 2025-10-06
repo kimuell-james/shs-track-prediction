@@ -17,13 +17,25 @@ document.addEventListener("DOMContentLoaded", function () {
     function showToast(message, type = "success") {
         const toastEl = document.getElementById("toastMessage");
         const toastBody = document.getElementById("toastBody");
+        const toastIcon = toastEl.querySelector(".toast-icon");
 
-        if (!toastEl || !toastBody) return;
+        if (!toastEl || !toastBody || !toastIcon) return;
 
-        toastEl.className = `toast align-items-center text-bg-${type} border-0`;
+        // Map message types to Bootstrap colors and icons (using Bootstrap Icons)
+        const iconMap = {
+            success: "bi-check-circle-fill",
+            danger: "bi-x-circle-fill",
+            warning: "bi-exclamation-triangle-fill",
+            info: "bi-info-circle-fill"
+        };
+
+        // Set toast color and icon
+        toastEl.className = `toast align-items-center text-bg-${type} border-0 shadow-lg`;
+        toastIcon.className = `toast-icon text-white me-3 bi ${iconMap[type] || "bi-info-circle-fill"}`;
         toastBody.textContent = message;
 
-        new bootstrap.Toast(toastEl, { delay: 3000 }).show();
+        // Show toast
+        new bootstrap.Toast(toastEl, { delay: 3500 }).show();
     }
 
     // ---------------------------

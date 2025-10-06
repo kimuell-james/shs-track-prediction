@@ -28,6 +28,7 @@ urlpatterns = [
     path('admin_panel/school_years/edit/<int:pk>/', views.edit_school_year, name='edit_school_year'),
     path('admin_panel/school_years/delete/<int:pk>/', views.delete_school_year, name='delete_school_year'),
     path('admin_panel/set_current_year/<int:sy_id>/', views.setCurrentYear, name='set_current_year'),
+    
     path("admin_panel/train_model/", views.trainModel, name="train_model"),
 
 ]

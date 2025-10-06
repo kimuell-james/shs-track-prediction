@@ -2,6 +2,8 @@ import os
 from django.conf import settings
 import joblib
 import numpy as np
+import pandas as pd
+from .models import ModelTrainingHistory
 
 def predict_track_for_student(student, grades):
     # Convert gender to numeric
@@ -16,49 +18,71 @@ def predict_track_for_student(student, grades):
             return 0.0
 
     # Prepare input data
-    input_data = np.array([
-        safe_float(student.age),
-        gender_value,
-        safe_float(grades.g7_filipino),
-        safe_float(grades.g7_english),
-        safe_float(grades.g7_math),
-        safe_float(grades.g7_science),
-        safe_float(grades.g7_ap),
-        safe_float(grades.g7_tle),
-        safe_float(grades.g7_mapeh),
-        safe_float(grades.g7_esp),
-        safe_float(grades.g8_filipino),
-        safe_float(grades.g8_english),
-        safe_float(grades.g8_math),
-        safe_float(grades.g8_science),
-        safe_float(grades.g8_ap),
-        safe_float(grades.g8_tle),
-        safe_float(grades.g8_mapeh),
-        safe_float(grades.g8_esp),
-        safe_float(grades.g9_filipino),
-        safe_float(grades.g9_english),
-        safe_float(grades.g9_math),
-        safe_float(grades.g9_science),
-        safe_float(grades.g9_ap),
-        safe_float(grades.g9_tle),
-        safe_float(grades.g9_mapeh),
-        safe_float(grades.g9_esp),
-        safe_float(grades.g10_filipino),
-        safe_float(grades.g10_english),
-        safe_float(grades.g10_math),
-        safe_float(grades.g10_science),
-        safe_float(grades.g10_ap),
-        safe_float(grades.g10_tle),
-        safe_float(grades.g10_mapeh),
-        safe_float(grades.g10_esp),
-    ], dtype=float)
+    input_dict = {
+        "age": safe_float(student.age),
+        "gender": str(student.gender).strip(),
+        "g7_filipino": safe_float(grades.g7_filipino),
+        "g7_english": safe_float(grades.g7_english),
+        "g7_math": safe_float(grades.g7_math),
+        "g7_science": safe_float(grades.g7_science),
+        "g7_ap": safe_float(grades.g7_ap),
+        "g7_tle": safe_float(grades.g7_tle),
+        "g7_mapeh": safe_float(grades.g7_mapeh),
+        "g7_esp": safe_float(grades.g7_esp),
+        "g8_filipino": safe_float(grades.g8_filipino),
+        "g8_english": safe_float(grades.g8_english),
+        "g8_math": safe_float(grades.g8_math),
+        "g8_science": safe_float(grades.g8_science),
+        "g8_ap": safe_float(grades.g8_ap),
+        "g8_tle": safe_float(grades.g8_tle),
+        "g8_mapeh": safe_float(grades.g8_mapeh),
+        "g8_esp": safe_float(grades.g8_esp),
+        "g9_filipino": safe_float(grades.g9_filipino),
+        "g9_english": safe_float(grades.g9_english),
+        "g9_math": safe_float(grades.g9_math),
+        "g9_science": safe_float(grades.g9_science),
+        "g9_ap": safe_float(grades.g9_ap),
+        "g9_tle": safe_float(grades.g9_tle),
+        "g9_mapeh": safe_float(grades.g9_mapeh),
+        "g9_esp": safe_float(grades.g9_esp),
+        "g10_filipino": safe_float(grades.g10_filipino),
+        "g10_english": safe_float(grades.g10_english),
+        "g10_math": safe_float(grades.g10_math),
+        "g10_science": safe_float(grades.g10_science),
+        "g10_ap": safe_float(grades.g10_ap),
+        "g10_tle": safe_float(grades.g10_tle),
+        "g10_mapeh": safe_float(grades.g10_mapeh),
+        "g10_esp": safe_float(grades.g10_esp),
+    }
 
-    # Load model
-    model_path = os.path.join(settings.BASE_DIR, 'predictor', 'ml_models', 'logreg_balanced.pkl')
+    # Load active model
+    active_models = ModelTrainingHistory.objects.filter(is_active=True)
+    if not active_models.exists():
+        raise ValueError("⚠️ No active model found. Train one first.")
+    elif active_models.count() > 1:
+        raise ValueError("⚠️ Multiple active models found. Please keep only one active model.")
+        
+    active_model = active_models.first()
+    
+    model_dir  = os.path.join(settings.BASE_DIR, "predictor", "ml_models")
+    model_path = os.path.join(model_dir, active_model.model_filename)
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"⚠️ Model file not found at {model_path}. Please retrain the model.")
+    
+    columns_path = os.path.join(model_dir, f"{active_model.model_filename}_columns.pkl")
+
     model = joblib.load(model_path)
+    training_columns = joblib.load(columns_path)
+
+    # --- Prepare input data ---
+    input_df = pd.DataFrame([input_dict])
+
+    # ✅ One-hot encode and align with training columns
+    input_df = pd.get_dummies(input_df)
+    input_df = input_df.reindex(columns=training_columns, fill_value=0)
 
     # Predict
-    prediction = model.predict([input_data])[0]
+    prediction = model.predict(input_df)[0]
 
     track_map = {0: "Academic", 1: "TVL"}
     predicted_label = track_map.get(prediction, "Unknown")
@@ -109,14 +133,22 @@ def predict_track_for_student(student, grades):
 
     # Coefficients per class (use predicted class)
     coef = model.coef_[0]
-    feature_contributions = input_data * coef
+
+    # Ensure all input features are numeric
+    input_df = input_df.apply(pd.to_numeric, errors='coerce').fillna(0)
+
+    # Align coefficient length with columns
+    if len(coef) != input_df.shape[1]:
+        raise ValueError(f"Mismatch: model expects {len(coef)} features, but got {input_df.shape[1]}")
+
+    feature_contributions = input_df.values.flatten() * coef
 
     # Exclude age & gender
     contributions_filtered = [
-        (subject_labels.get(name, name), contrib)
-        for name, contrib in zip(feature_names, feature_contributions)
-        if name not in ["age", "gender"]
-    ]
+    (subject_labels.get(name, name), float(contrib))
+    for name, contrib in zip(input_df.columns, feature_contributions)
+    if name not in ["age", "gender"]
+]
 
     # Top 5 contributors
     top_contributing_subjects = sorted(

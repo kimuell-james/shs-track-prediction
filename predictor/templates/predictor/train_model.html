@@ -1,15 +1,39 @@
 <h3>Train Model</h3>
-<form action="{% url 'train_model' %}" method="post">
+
+<form action="{% url 'train_model' %}" method="POST" class="mb-3">
     {% csrf_token %}
     <button type="submit" class="btn btn-success">
         🚀 Train Model
     </button>
 </form>
 
-{% if messages %}
-<div class="mt-3">
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-    {% endfor %}
-</div>
-{% endif %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Filename</th>
+            <th>Accuracy</th>
+            <th>Trained At</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for model in models %}
+        <tr>
+            <td>{{ model.model_filename }}</td>
+            <td>{{ model.accuracy|floatformat:2 }}%</td>
+            <td>{{ model.trained_at }}</td>
+            <td>
+                {% if model.is_active %}
+                ✅ <strong>Active</strong>
+                {% else %}
+                Inactive
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3">No training history found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

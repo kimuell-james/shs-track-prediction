@@ -1,21 +1,30 @@
 import os
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score
 import joblib
-from predictor.models import Student, StudentGrade
+from datetime import datetime
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, classification_report
 from django.conf import settings
+from predictor.models import Student, StudentGrade, SchoolYear, ModelTrainingHistory
 
 def train_model():
-    # Get students who have both actual and predicted tracks
-    students = Student.objects.filter(actual_track__isnull=False, predicted_track__isnull=False)
+    """
+    Trains a logistic regression model using ALL available school year data
+    (up to the current one) and saves the model named after the CURRENT school year.
+    """
 
+    # ✅ Get the current school year
+    current_sy = SchoolYear.objects.filter(is_current=True).first()
+    if not current_sy:
+        return "⚠️ No current school year set!"
+
+    # ✅ Collect all students with complete data
+    students = Student.objects.filter(actual_track__isnull=False)
     if not students.exists():
-        return "⚠️ No students with both actual and predicted track."
+        return "⚠️ No students found with both actual and predicted tracks."
 
-    # Join student info and grades
+    # ✅ Combine all student records from all years
     data = []
     for student in students:
         grades = StudentGrade.objects.filter(student_id=student).first()
@@ -59,31 +68,47 @@ def train_model():
             })
 
     df = pd.DataFrame(data)
+    if df.empty:
+        return "⚠️ No valid grade records found."
 
-    feature_cols = [col for col in df.columns if col not in ["actual_track"]]
-    missing = [col for col in feature_cols if col not in df.columns]
-    if missing:
-        return f"Missing feature columns: {', '.join(missing)}"
-
-    X = df[feature_cols]
+    # ✅ Preprocessing
+    X = df.drop(columns=["actual_track"], errors="ignore")
     y = df["actual_track"]
 
-    # Encode categorical variables
     X = pd.get_dummies(X)
     le = LabelEncoder()
-    y = le.fit_transform(y)
+    y_encoded = le.fit_transform(y)
 
-    # Split and train
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    model = LogisticRegression(max_iter=500)
-    model.fit(X_train, y_train)
+    # ✅ Train model using *entire dataset*
+    model = LogisticRegression(max_iter=1000, class_weight="balanced")
+    model.fit(X, y_encoded)
 
-    y_pred = model.predict(X_test)
-    accuracy = accuracy_score(y_test, y_pred)
+    y_pred = model.predict(X)
+    training_accuracy = accuracy_score(y_encoded, y_pred)
+    # print(classification_report(y_encoded, y_pred))
 
-    # Save model
-    os.makedirs('ml_models', exist_ok=True)
-    model_path = os.path.join(settings.BASE_DIR, 'predictor', 'ml_models', 'shs_track_model.pkl')
+    # (optional) classification_report for admin logging
+    report = classification_report(y_encoded, y_pred)
+
+    # ✅ Save model (name based on CURRENT school year)
+    model_filename = f"shs_track_insight_model_{current_sy.school_year.replace(' ', '').replace('-', '_')}.pkl"
+    model_dir = os.path.join(settings.BASE_DIR, "predictor", "ml_models")
+    os.makedirs(model_dir, exist_ok=True)
+    model_path = os.path.join(model_dir, model_filename)
     joblib.dump(model, model_path)
 
-    return f"✅ Model trained successfully (Accuracy: {accuracy:.2%})" # and saved to {model_path}
+    # ✅ Save the feature columns used for training
+    columns_path = os.path.join(model_dir, f"{model_filename}_columns.pkl")
+    joblib.dump(X.columns.tolist(), columns_path)
+
+    # ✅ Log training in ModelTrainingHistory
+    new_model = ModelTrainingHistory.objects.create(
+        school_year=current_sy,
+        model_filename=model_filename,
+        trained_at=datetime.now(),
+        accuracy=training_accuracy,
+        is_active=True
+    )
+    ModelTrainingHistory.objects.exclude(pk=new_model.pk).update(is_active=False)
+
+    return f"✅ Model trained successfully for {current_sy.school_year} (Accuracy: {training_accuracy:.2%}) and set as Active model."

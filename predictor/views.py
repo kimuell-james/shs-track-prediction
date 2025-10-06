@@ -391,8 +391,9 @@ def modelEvaluation(request):
 def adminPanel(request):
     users = User.objects.all().order_by("id")
     school_years = SchoolYear.objects.all().order_by("-school_year")
+    models = ModelTrainingHistory.objects.all().order_by('-trained_at')
 
-    context = {'users': users, 'school_years': school_years}
+    context = {'users': users, 'school_years': school_years, 'models':models}
 
     return render(request, 'predictor/admin_panel.html', context)
 
@@ -466,7 +467,10 @@ def deleteUser(request, user_id):
 @user_passes_test(admin_required, login_url="/login/")
 def school_year_list(request):
     school_years = SchoolYear.objects.all().order_by("-sy_id")
-    return render(request, "predictor/school_year_list.html", {"school_years": school_years})
+
+    context = {'school_years': school_years}
+
+    return render(request, "predictor/school_year_list.html", context)
 
 @user_passes_test(admin_required, login_url="/login/")
 def add_school_year(request):
@@ -501,7 +505,8 @@ def delete_school_year(request, pk):
     if request.method == "POST":
         sy.delete()
         return redirect("admin_panel")
-    return render(request, "predictor/delete_school_year.html", {"sy": sy})
+    context = {'sy':sy}
+    return render(request, "predictor/delete_school_year.html", context)
 
 @user_passes_test(admin_required, login_url="/login/")
 def setCurrentYear(request, sy_id):
@@ -523,7 +528,11 @@ def trainModel(request):
             messages.success(request, result_message)
         except Exception as e:
             messages.error(request, f"❌ Training failed: {e}")
-        return redirect('admin_panel') 
-    else:
-        messages.warning(request, "Invalid request method.")
-        return redirect('admin_panel')
+        return redirect("admin_panel")  # Redirect back to same page after training
+
+    # Handle GET — show model info table
+    models = ModelTrainingHistory.objects.all().order_by('-trained_at')
+
+    context = {'models': models}
+
+    return render(request, "predictor/train_model.html", context)

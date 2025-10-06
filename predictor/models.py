@@ -78,3 +78,20 @@ class StudentGrade(models.Model):
     g10_tle = models.FloatField()
     g10_mapeh = models.FloatField()
     g10_esp = models.FloatField()
+
+class ModelTrainingHistory(models.Model):
+    school_year = models.ForeignKey(SchoolYear, on_delete=models.CASCADE)
+    model_filename = models.CharField(max_length=255)
+    trained_at = models.DateTimeField(auto_now_add=True)
+    accuracy = models.FloatField(default=0)
+
+    is_active = models.BooleanField(default=False)  # ✅ new field
+
+    def save(self, *args, **kwargs):
+        # ✅ Ensure only one model is active at a time
+        if self.is_active:
+            ModelTrainingHistory.objects.exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.model_filename} ({'Active' if self.is_active else 'Inactive'})"
