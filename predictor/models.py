@@ -17,13 +17,29 @@ class SchoolYear(models.Model):
         return self.school_year
 
 class Student(models.Model):
+    GENDER_CHOICES = [
+        ("Male", "Male"),
+        ("Female", "Female"),
+    ]
+
+    GRADE_LEVEL_CHOICES = [
+        ("10", "10"),
+        ("11", "11"),
+        ("12", "12"),
+    ]
+
+    ACTUAL_TRACK_CHOICES = [
+        ("Academic", "Academic"),
+        ("TVL", "TVL"),
+    ]
+
     student_id = models.AutoField(primary_key=True)
     age = models.IntegerField()
-    gender = models.CharField(max_length=50)
-    grade_level = models.IntegerField()
+    gender = models.CharField(max_length=50, choices=GENDER_CHOICES)
+    grade_level = models.CharField(max_length=2, choices=GRADE_LEVEL_CHOICES)
     sy = models.ForeignKey(SchoolYear, on_delete=models.CASCADE)
     predicted_track = models.CharField(max_length=50, blank=True, null=True)
-    actual_track = models.CharField(max_length=50, blank=True, null=True)
+    actual_track = models.CharField(max_length=50, blank=True, null=True, choices=ACTUAL_TRACK_CHOICES)
     contributing_subjects = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     predicted_at = models.DateTimeField(blank=True, null=True)

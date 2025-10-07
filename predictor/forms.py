@@ -14,6 +14,11 @@ class StudentForm(forms.ModelForm):
         model = Student
         exclude = ['student_id']
         fields = ["age", "gender", "sy", "grade_level", "predicted_track", "actual_track", "contributing_subjects"]  # include sy
+        widgets = {
+            "gender": forms.Select(attrs={"class": "form-select"}),
+            "grade_level": forms.Select(attrs={"class": "form-select"}),
+            "actual_track": forms.Select(attrs={"class": "form-select"}),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

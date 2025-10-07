@@ -1,10 +1,9 @@
 <div id="train-model-section">
     <h3>School Year</h3>
     <a href="{% url 'add_school_year' %}" class="btn btn-success mb-3">+ Add School Year</a>
-    <table class="table table-striped">
+    <table class="table table-striped table-hover text-center">
         <thead>
             <tr>
-                <th>ID</th>
                 <th>School Year</th>
                 <th>Is Current?</th>
                 <th>Actions</th>
@@ -13,7 +12,6 @@
         <tbody>
             {% for sy in school_years %}
             <tr>
-                <td>{{ sy.sy_id }}</td>
                 <td>{{ sy.school_year }}</td>
                 <td>
                     {% if sy.is_current %}

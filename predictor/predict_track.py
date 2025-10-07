@@ -75,7 +75,7 @@ def predict_track_for_student(student, grades):
     scaler = joblib.load(scaler_path)
     training_columns = joblib.load(columns_path)
 
-    # --- Prepare input data ---
+    # Prepare input data
     input_df = pd.DataFrame([input_dict])
     input_df["gender"] = input_df["gender"].map({"Male":1, "Female":0})
 
@@ -100,64 +100,66 @@ def predict_track_for_student(student, grades):
     ]
 
     subject_labels = {
-        "g7_filipino": "Grade 7 - Filipino",
-        "g7_english": "Grade 7 - English",
-        "g7_math": "Grade 7 - Mathematics",
-        "g7_science": "Grade 7 - Science",
-        "g7_ap": "Grade 7 - Araling Panlipunan",
-        "g7_tle": "Grade 7 - TLE",
-        "g7_mapeh": "Grade 7 - MAPEH",
-        "g7_esp": "Grade 7 - ESP",
-        "g8_filipino": "Grade 8 - Filipino",
-        "g8_english": "Grade 8 - English",
-        "g8_math": "Grade 8 - Mathematics",
-        "g8_science": "Grade 8 - Science",
-        "g8_ap": "Grade 8 - Araling Panlipunan",
-        "g8_tle": "Grade 8 - TLE",
-        "g8_mapeh": "Grade 8 - MAPEH",
-        "g8_esp": "Grade 8 - ESP",
-        "g9_filipino": "Grade 9 - Filipino",
-        "g9_english": "Grade 9 - English",
-        "g9_math": "Grade 9 - Mathematics",
-        "g9_science": "Grade 9 - Science",
-        "g9_ap": "Grade 9 - Araling Panlipunan",
-        "g9_tle": "Grade 9 - TLE",
-        "g9_mapeh": "Grade 9 - MAPEH",
-        "g9_esp": "Grade 9 - ESP",
-        "g10_filipino": "Grade 10 - Filipino",
-        "g10_english": "Grade 10 - English",
-        "g10_math": "Grade 10 - Mathematics",
-        "g10_science": "Grade 10 - Science",
-        "g10_ap": "Grade 10 - Araling Panlipunan",
-        "g10_tle": "Grade 10 - TLE",
-        "g10_mapeh": "Grade 10 - MAPEH",
-        "g10_esp": "Grade 10 - ESP",
+        # Grade 7
+        "g7_filipino": "G7 - Filipino",
+        "g7_english": "G7 - English",
+        "g7_math": "G7 - Math",
+        "g7_science": "G7 - Science",
+        "g7_ap": "G7 - AP",
+        "g7_tle": "G7 - TLE",
+        "g7_mapeh": "G7 - MAPEH",
+        "g7_esp": "G7 - ESP",
+
+        # Grade 8
+        "g8_filipino": "G8 - Filipino",
+        "g8_english": "G8 - English",
+        "g8_math": "G8 - Math",
+        "g8_science": "G8 - Science",
+        "g8_ap": "G8 - AP",
+        "g8_tle": "G8 - TLE",
+        "g8_mapeh": "G8 - MAPEH",
+        "g8_esp": "G8 - ESP",
+
+        # Grade 9
+        "g9_filipino": "G9 - Filipino",
+        "g9_english": "G9 - English",
+        "g9_math": "G9 - Math",
+        "g9_science": "G9 - Science",
+        "g9_ap": "G9 - AP",
+        "g9_tle": "G9 - TLE",
+        "g9_mapeh": "G9 - MAPEH",
+        "g9_esp": "G9 - ESP",
+
+        # Grade 10
+        "g10_filipino": "G10 - Filipino",
+        "g10_english": "G10 - English",
+        "g10_math": "G10 - Math",
+        "g10_science": "G10 - Science",
+        "g10_ap": "G10 - AP",
+        "g10_tle": "G10 - TLE",
+        "g10_mapeh": "G10 - MAPEH",
+        "g10_esp": "G10 - ESP",
     }
 
-    # Coefficients per class (use predicted class)
+    # Contributions
     coef = model.coef_[0]
-
-    # Ensure all input features are numeric
     input_df = input_df.apply(pd.to_numeric, errors='coerce').fillna(0)
-
-    # Align coefficient length with columns
-    if len(coef) != input_df.shape[1]:
-        raise ValueError(f"Mismatch: model expects {len(coef)} features, but got {input_df.shape[1]}")
-
     feature_contributions = input_df.values.flatten() * coef
 
-    # Exclude age & gender
-    contributions_filtered = [
-    (subject_labels.get(name, name), float(contrib))
-    for name, contrib in zip(input_df.columns, feature_contributions)
-    if name not in ["age", "gender"]
-]
+    contributions_filtered = []
+    for name, contrib in zip(input_df.columns, feature_contributions):
+        if name in ["age", "gender"]:
+            continue
+        # Only keep features that support the predicted track
+        if (predicted_label == "Academic" and contrib < 0) or \
+           (predicted_label == "TVL" and contrib > 0):
+            contributions_filtered.append((subject_labels.get(name, name), float(contrib)))
 
-    # Top 5 contributors
+    # Sort contributions by magnitude (largest positive for predicted track first)
     top_contributing_subjects = sorted(
         contributions_filtered,
-        key=lambda x: abs(x[1]),
-        reverse=True
+        key=lambda x: x[1],
+        reverse=True if predicted_label == "Academic" else False
     )[:5]
 
     return prediction, predicted_label, top_contributing_subjects

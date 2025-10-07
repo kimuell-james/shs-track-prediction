@@ -30,6 +30,7 @@ from .models import *
 from .forms import *
 from .train_model import train_model
 from .decorators import unauthenticated_user
+from .constants import SUBJECT_LABELS
 
 def admin_required(user):
     return user.is_superuser
@@ -61,37 +62,92 @@ def logoutUser(request):
 
 @login_required(login_url="/login/")
 def home(request):
-    # Get current school year
+    # --- 1Get current school year ---
     current_sy = SchoolYear.objects.filter(is_current=True).first()
-
     if not current_sy:
         messages.info(request, "No active school year set.")
         return render(request, 'predictor/dashboard.html', {})
 
-    # === STATS ===
+    # --- Get selected grade from dropdown ---
+    selected_grade = request.GET.get("grade_level", "g10")  # default to G10
+
+    # --- Filter StudentGrades for students in current SY ---
+    data = list(
+        StudentGrade.objects.filter(student_id__sy=current_sy)
+        .values("student_id__actual_track",
+                *[f"g{i}_{subj}" for i in range(7, 11) for subj in [
+                    "filipino", "english", "math", "science", "ap", "tle", "mapeh", "esp"
+                ]])
+    )
+
+    df = pd.DataFrame(data)
+    if df.empty:
+        return render(request, "predictor/dashboard.html", {
+            "error": f"No student grades found for school year {current_sy.school_year}."
+        })
+
+    # Rename track column for convenience
+    df.rename(columns={"student_id__actual_track": "track"}, inplace=True)
+
+    # --- Melt and preprocess ---
+    grade_cols = [col for col in df.columns if col.startswith("g")]
+    long_df = df.melt(id_vars=["track"], value_vars=grade_cols,
+                      var_name="subject", value_name="grade")
+    long_df["grade_level"] = long_df["subject"].str.extract(r"(g\d+)")
+    long_df["subject_name"] = long_df["subject"].str.replace(r"g\d+_", "", regex=True)
+
+    # ---  Filter by selected grade ---
+    filtered_df = long_df[long_df["grade_level"] == selected_grade]
+
+    SUBJECT_DISPLAY = {
+        "filipino": "Filipino",
+        "english": "English",
+        "math": "Math",
+        "science": "Science",
+        "ap": "AP",
+        "tle": "TLE",
+        "mapeh": "MAPEH",
+        "esp": "ESP"
+    }
+
+    # --- Compute average per subject per track ---
+    avg_table = (
+        filtered_df.groupby(["subject_name", "track"])["grade"]
+        .mean()
+        .unstack(fill_value=0)
+        .round(2)
+        .reset_index()
+    )
+
+    avg_table["subject_name"] = avg_table["subject_name"].map(SUBJECT_DISPLAY)
+
+    # --- Prepare grade dropdown options ---
+    grade_options = sorted(
+        long_df["grade_level"].unique().tolist(),
+        key=lambda x: int(x[1:])  # extract number after 'g' and sort
+    )
+
+    # --- Dashboard stats ---
     total_students = Student.objects.filter(sy=current_sy).count()
     predicted_count = Student.objects.filter(sy=current_sy, predicted_track__isnull=False).count()
     actual_count = Student.objects.filter(sy=current_sy, actual_track__isnull=False).count()
 
-    # === DISTRIBUTIONS ===
+    # --- Distributions ---
     predicted_distribution = (
         Student.objects.filter(sy=current_sy)
         .values("predicted_track")
         .annotate(count=Count("predicted_track"))
     )
-
     actual_distribution = (
         Student.objects.filter(sy=current_sy)
         .values("actual_track")
         .annotate(count=Count("actual_track"))
     )
-
     gender_distribution = (
         Student.objects.filter(sy=current_sy)
         .values("actual_track", "gender")
         .annotate(count=Count("gender"))
     )
-
     age_distribution = (
         Student.objects.filter(sy=current_sy)
         .values("actual_track", "age")
@@ -99,11 +155,9 @@ def home(request):
         .order_by("age")
     )
 
-    # === Generate dynamic chart descriptions ===
+    # --- Generate chart descriptions ---
     def generate_chart_descriptions():
         descriptions = {}
-
-        # Predicted Track
         if predicted_distribution:
             top_predicted = max(predicted_distribution, key=lambda x: x["count"])
             descriptions["predicted"] = (
@@ -113,7 +167,6 @@ def home(request):
         else:
             descriptions["predicted"] = "No predicted track data available."
 
-        # Actual Track
         if actual_distribution:
             top_actual = max(actual_distribution, key=lambda x: x["count"])
             descriptions["actual"] = (
@@ -123,7 +176,6 @@ def home(request):
         else:
             descriptions["actual"] = "No actual track data available."
 
-        # Gender Distribution
         if gender_distribution:
             descriptions["gender"] = (
                 f"This chart shows the gender distribution per track for {current_sy.school_year}. "
@@ -132,7 +184,6 @@ def home(request):
         else:
             descriptions["gender"] = "No gender distribution data available."
 
-        # Age Distribution
         if age_distribution:
             descriptions["age"] = (
                 f"This chart visualizes the age distribution of students across tracks for "
@@ -145,8 +196,12 @@ def home(request):
 
     chart_descriptions = generate_chart_descriptions()
 
-    # === CONTEXT ===
+    # --- Prepare context ---
     context = {
+        "avg_table": avg_table.to_dict(orient="records"),
+        "columns": avg_table.columns.tolist(),
+        "grade_options": grade_options,
+        "selected_grade": selected_grade,
         "total_students": total_students,
         "predicted_count": predicted_count,
         "actual_count": actual_count,
@@ -155,7 +210,7 @@ def home(request):
         "gender_distribution": json.dumps(list(gender_distribution)),
         "age_distribution": json.dumps(list(age_distribution)),
         "chart_descriptions": chart_descriptions,
-        "current_sy": current_sy.school_year,
+        "current_sy": current_sy.school_year,  # string for display in template
     }
 
     return render(request, "predictor/dashboard.html", context)
@@ -236,6 +291,11 @@ def viewStudentRecord(request, pk):
     student_form = StudentForm(instance=student)
     grades_form = StudentGradesForm(instance=grades)
 
+    # Apply subject labels mapping
+    for field_name, label in SUBJECT_LABELS.items():
+        if field_name in grades_form.fields:
+            grades_form.fields[field_name].label = label
+
     for field in student_form.fields.values():
         field.widget.attrs['readonly'] = True
         field.widget.attrs['disabled'] = True
@@ -256,6 +316,11 @@ def updateStudentRecord(request, pk):
         student_form = StudentForm(request.POST, instance=student)
         grades_form = StudentGradesForm(request.POST, instance=grades)
 
+        # Apply subject labels mapping
+        for field_name, label in SUBJECT_LABELS.items():
+            if field_name in grades_form.fields:
+                grades_form.fields[field_name].label = label
+
         if student_form.is_valid() and grades_form.is_valid():
             student_form.save()
             grades_form.save()
@@ -275,6 +340,12 @@ def updateStudentRecord(request, pk):
     # normal GET
     student_form = StudentForm(instance=student)
     grades_form = StudentGradesForm(instance=grades)
+
+    # Apply subject labels mapping
+    for field_name, label in SUBJECT_LABELS.items():
+        if field_name in grades_form.fields:
+            grades_form.fields[field_name].label = label
+
     context = {'student_form': student_form, 'grades_form': grades_form, 'readonly': False, "is_add": False, 'mode': 'edit', 'display_id': student.student_id,}
     return render(request, 'predictor/student_form.html', context)
 

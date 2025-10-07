@@ -1,5 +1,7 @@
 {% extends 'predictor/main.html' %}
 
+{% load dict_extras %}
+
 {% block content %}
 
 <h1>📊 SHS Prediction Dashboard</h1>
@@ -12,6 +14,46 @@
     <p><b>With Predicted Track:</b> {{ predicted_count }}</p>
     <p><b>With Actual Track:</b> {{ actual_count }}</p>
 </div>
+<hr>
+
+<!-- Average Grades per Track (Per Grade Level) -->
+<h3>Average Grades per Track (Per Grade Level)</h3>
+<form method="get" class="mb-3 d-flex align-items-center justify-content-left">
+  <label for="grade_level" class="me-2 mb-0">Select Grade Level:</label>
+  <select name="grade_level" id="grade_level" onchange="this.form.submit()" class="form-select w-auto">
+    {% for grade in grade_options %}
+      <option value="{{ grade }}" {% if grade == selected_grade %}selected{% endif %}>
+        {{ grade|upper }}
+      </option>
+    {% endfor %}
+  </select>
+</form>
+
+{% if avg_table %}
+<div class="table-responsive">
+  <table class="table table-striped table-hover text-center">
+    <thead>
+      <tr>
+          <th>Subject Name</th>
+          <th>Academic</th>
+          <th>TVL</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in avg_table %}
+      <tr>
+        {% for col in columns %}
+          <td>{{ row|dict_get:col }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-center text-muted">No data available for {{ selected_grade|upper }} in {{ current_sy }}.</p>
+{% endif %}
+
 <hr>
 
 <!-- Charts -->
@@ -70,7 +112,18 @@
         },
         options: {
             plugins: {
-                title: { display: true, text: "Predicted Track Distribution" }
+                title: { 
+                    display: true, 
+                    text: "Predicted Track Distribution" ,
+                    font: {
+                        size: 20,      // <-- make the title bigger
+                        weight: 'bold', // optional: make it bold
+                    },
+                    padding: {
+                        top: 10,      // optional: spacing above title
+                        bottom: 10    // optional: spacing below title
+                    }
+                }
             }
         }
     });
@@ -87,7 +140,18 @@
         },
         options: {
             plugins: {
-                title: { display: true, text: "Actual Track Distribution" }
+                title: { 
+                    display: true, 
+                    text: "Actual Track Distribution" ,
+                    font: {
+                        size: 20,      // <-- make the title bigger
+                        weight: 'bold', // optional: make it bold
+                    },
+                    padding: {
+                        top: 10,      // optional: spacing above title
+                        bottom: 10    // optional: spacing below title
+                    }
+                }
             }
         }
     });
@@ -119,7 +183,18 @@
         options: {
             responsive: true,
             plugins: {
-                title: { display: true, text: "Gender Distribution per Track" }
+                title: { 
+                    display: true, 
+                    text: "Gender Distribution per Track" ,
+                    font: {
+                        size: 20,      // <-- make the title bigger
+                        weight: 'bold', // optional: make it bold
+                    },
+                    padding: {
+                        top: 10,      // optional: spacing above title
+                        bottom: 10    // optional: spacing below title
+                    }
+                }
             },
             scales: {
                 y: { beginAtZero: true }
@@ -149,7 +224,20 @@
             datasets: datasets
         },
         options: {
-            plugins: { title: { display: true, text: "Age Distribution per Track" } },
+            plugins: { 
+                title: { 
+                    display: true, 
+                    text: "Age Distribution per Track" ,
+                    font: {
+                        size: 20,      // <-- make the title bigger
+                        weight: 'bold', // optional: make it bold
+                    },
+                    padding: {
+                        top: 10,      // optional: spacing above title
+                        bottom: 10    // optional: spacing below title
+                    }
+                } 
+            },
             responsive: true,
             scales: { x: { stacked: true }, y: { stacked: true } }
         }
