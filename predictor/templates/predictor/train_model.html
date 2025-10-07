@@ -1,39 +1,87 @@
-<h3>Train Model</h3>
+<div id="train-model-section">
+    <h3>Train Model</h3>
 
-<form action="{% url 'train_model' %}" method="POST" class="mb-3">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-success">
+
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#trainModelModal">
         🚀 Train Model
     </button>
-</form>
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Filename</th>
-            <th>Accuracy</th>
-            <th>Trained At</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for model in models %}
-        <tr>
-            <td>{{ model.model_filename }}</td>
-            <td>{{ model.accuracy|floatformat:2 }}%</td>
-            <td>{{ model.trained_at }}</td>
-            <td>
-                {% if model.is_active %}
-                ✅ <strong>Active</strong>
-                {% else %}
-                Inactive
-                {% endif %}
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="3">No training history found.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    <!-- TRAIN MODEL MODAL -->
+    <div class="modal fade" id="trainModelModal" tabindex="-1" aria-labelledby="trainModelLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="trainModelLabel">Confirm Model Training</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+            <p><strong>Training Summary</strong></p>
+            <ul>
+            <li><b>Available Student Records:</b> {{ student_count }}</li>
+            <li><b>School Years in Dataset:</b> {{ included_school_years_text }}</li>
+            </ul>
+
+            {% if student_count == 0 %}
+            <div class="alert alert-warning">
+                ⚠️ No valid student data available for training.
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="modal-footer">
+            <form method="POST" action="{% url 'train_model' %}">
+            {% csrf_token %}
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            {% if student_count > 0 %}
+                <button type="submit" class="btn btn-success">Confirm & Train</button>
+            {% else %}
+                <button type="button" class="btn btn-secondary" disabled>Train</button>
+            {% endif %}
+            </form>
+        </div>
+        </div>
+    </div>
+    </div>
+
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Filename</th>
+                <th>Accuracy</th>
+                <th>Dataset Count</th>
+                <th>Included School Years</th>
+                <th>Trained At</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for model in models %}
+            <tr>
+                <td>{{ model.model_filename }}</td>
+                <td>{{ model.accuracy|floatformat:2 }}%</td>
+                <td>{{ model.dataset_count }}</td>
+                <td>{{ model.included_school_years }}</td>
+                <td>{{ model.trained_at }}</td>
+                <td>
+                    {% if model.is_active %}
+                    ✅ <strong>Active</strong>
+                    {% else %}
+                    Inactive
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">No training history found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% include "predictor/pagination_controls.html" with page_obj=models page_param="model_page" anchor="#train-model-section" %}
+
+
+
+</div>

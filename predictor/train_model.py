@@ -96,19 +96,33 @@ def train_model():
     # Save model & scaler
     model_dir = os.path.join(settings.BASE_DIR, "predictor", "ml_models")
     os.makedirs(model_dir, exist_ok=True)
-    model_filename = f"shs_track_insight_model_{current_sy.school_year.replace(' ','').replace('-','_')}.pkl"
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    model_filename = f"shs_track_insight_model_{current_sy.school_year.replace(' ','').replace('-','_')}_{timestamp}.pkl"
+    
     joblib.dump(model, os.path.join(model_dir, model_filename))
     joblib.dump(scaler, os.path.join(model_dir, f"{model_filename}_scaler.pkl"))
     joblib.dump(feature_columns, os.path.join(model_dir, f"{model_filename}_columns.pkl"))
 
+    # ✅ Only include school years of students that qualify for training
+    dataset_size = students.count()
+    included_school_years = (
+        SchoolYear.objects.filter(sy_id__in=students.values_list("sy_id", flat=True))
+        .values_list("school_year", flat=True)
+        .distinct()
+    )
+    included_school_years_text = ", ".join(included_school_years)
+
     # Log training
     new_model = ModelTrainingHistory.objects.create(
         school_year=current_sy,
+        dataset_count=dataset_size,
+        included_school_years=included_school_years_text,
         model_filename=model_filename,
-        trained_at=datetime.now(),
         accuracy=training_accuracy,
-        is_active=True
+        trained_at=datetime.now(),
+        is_active=True,
     )
     ModelTrainingHistory.objects.exclude(pk=new_model.pk).update(is_active=False)
 
-    return f"Model trained successfully for {current_sy.school_year} (Accuracy: {training_accuracy:.2%})"
+    return f"Model trained successfully for {current_sy.school_year} (Accuracy: {training_accuracy:.2%}, {dataset_size} records)"

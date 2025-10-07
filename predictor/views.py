@@ -24,7 +24,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.core.paginator import Paginator
 from django import forms
 from django.db.models import Count
-
+from predictor.utils.dashboard_descriptions import generate_dashboard_descriptions
 from .predict_track import predict_track_for_student 
 from .models import *
 from .forms import *
@@ -61,36 +61,37 @@ def logoutUser(request):
 
 @login_required(login_url="/login/")
 def home(request):
-
     # Get current school year
     current_sy = SchoolYear.objects.filter(is_current=True).first()
 
     if not current_sy:
         messages.info(request, "No active school year set.")
         return render(request, 'predictor/dashboard.html', {})
-    
-    # Stats
+
+    # === STATS ===
     total_students = Student.objects.filter(sy=current_sy).count()
     predicted_count = Student.objects.filter(sy=current_sy, predicted_track__isnull=False).count()
     actual_count = Student.objects.filter(sy=current_sy, actual_track__isnull=False).count()
 
-    # Distributions
-    # Distributions
+    # === DISTRIBUTIONS ===
     predicted_distribution = (
         Student.objects.filter(sy=current_sy)
         .values("predicted_track")
         .annotate(count=Count("predicted_track"))
     )
+
     actual_distribution = (
         Student.objects.filter(sy=current_sy)
         .values("actual_track")
         .annotate(count=Count("actual_track"))
     )
+
     gender_distribution = (
         Student.objects.filter(sy=current_sy)
         .values("actual_track", "gender")
         .annotate(count=Count("gender"))
     )
+
     age_distribution = (
         Student.objects.filter(sy=current_sy)
         .values("actual_track", "age")
@@ -98,16 +99,53 @@ def home(request):
         .order_by("age")
     )
 
-    # # Load data for describe()
-    # students = Student.objects.filter(sy=current_sy).values()
-    # grades = StudentGrade.objects.filter(student_id__sy=current_sy).values()
+    # === Generate dynamic chart descriptions ===
+    def generate_chart_descriptions():
+        descriptions = {}
 
-    # df_students = pd.DataFrame(students)
-    # df_grades = pd.DataFrame(grades)
+        # Predicted Track
+        if predicted_distribution:
+            top_predicted = max(predicted_distribution, key=lambda x: x["count"])
+            descriptions["predicted"] = (
+                f"The most predicted track for {current_sy.school_year} is "
+                f"{top_predicted['predicted_track']} with {top_predicted['count']} students."
+            )
+        else:
+            descriptions["predicted"] = "No predicted track data available."
 
-    # desc_students = df_students[["age", "grade_level"]].describe().to_html(classes="table table-striped") if not df_students.empty else None
-    # desc_grades = df_grades.drop(columns=["grade_id", "student_id"]).describe().to_html(classes="table table-striped") if not df_grades.empty else None
+        # Actual Track
+        if actual_distribution:
+            top_actual = max(actual_distribution, key=lambda x: x["count"])
+            descriptions["actual"] = (
+                f"The most chosen actual track is {top_actual['actual_track']} "
+                f"with {top_actual['count']} students enrolled."
+            )
+        else:
+            descriptions["actual"] = "No actual track data available."
 
+        # Gender Distribution
+        if gender_distribution:
+            descriptions["gender"] = (
+                f"This chart shows the gender distribution per track for {current_sy.school_year}. "
+                "It helps identify if a particular track is more popular among male or female students."
+            )
+        else:
+            descriptions["gender"] = "No gender distribution data available."
+
+        # Age Distribution
+        if age_distribution:
+            descriptions["age"] = (
+                f"This chart visualizes the age distribution of students across tracks for "
+                f"{current_sy.school_year}, showing common age ranges per track."
+            )
+        else:
+            descriptions["age"] = "No age distribution data available."
+
+        return descriptions
+
+    chart_descriptions = generate_chart_descriptions()
+
+    # === CONTEXT ===
     context = {
         "total_students": total_students,
         "predicted_count": predicted_count,
@@ -116,12 +154,12 @@ def home(request):
         "actual_distribution": json.dumps(list(actual_distribution)),
         "gender_distribution": json.dumps(list(gender_distribution)),
         "age_distribution": json.dumps(list(age_distribution)),
-        # "desc_students": desc_students,
-        # "desc_grades": desc_grades,
+        "chart_descriptions": chart_descriptions,
         "current_sy": current_sy.school_year,
     }
 
-    return render(request, 'predictor/dashboard.html', context)
+    return render(request, "predictor/dashboard.html", context)
+
 
 @login_required(login_url="/login/")
 def studentsRecord(request):
@@ -272,10 +310,10 @@ def predictStudentTrack(request, pk):
     student.contributing_subjects = ", ".join(subject_names)  # safe now
     student.save()
 
-    # messages.success(request, f"Prediction complete: {predicted_label}")
+    page = request.GET.get("page", 1)
 
     messages.success(request, f"Prediction complete: Student {pk} - {predicted_label}")
-    return redirect("student_record")
+    return redirect(f"{reverse('student_record')}?page={page}#student-{student.student_id}")
 
 def plot_to_base64():
     buf = io.BytesIO()
@@ -393,6 +431,94 @@ def modelEvaluation(request):
         if isinstance(metrics, dict): 
             if "f1-score" in metrics: metrics["f1_score"] = metrics.pop("f1-score")
 
+        # === Generate Analytical Descriptions ===
+    def generate_model_analysis():
+        insights = {}
+
+        # --- Overall Model Performance ---
+        if accuracy >= 0.85:
+            perf_desc = "excellent performance with high predictive reliability"
+        elif accuracy >= 0.75:
+            perf_desc = "strong and consistent accuracy across tracks"
+        elif accuracy >= 0.65:
+            perf_desc = "moderate accuracy with potential room for feature refinement"
+        else:
+            perf_desc = "low performance; model may require retraining or additional predictors"
+
+        insights["overall"] = (
+            f"The model achieved an accuracy of <strong>{accuracy * 100:.2f}%</strong>, "
+            f"showing {perf_desc}. The ROC-AUC score of <strong>{roc_auc:.3f}</strong> "
+            f"indicates the model’s ability to correctly distinguish between the <strong>Academic</strong> "
+            f"and <strong>TVL</strong> tracks."
+        )
+
+        # --- Class-wise Analysis (Precision/Recall/F1) ---
+        track_metrics = {k: v for k, v in report.items() if k in ["Academic", "TVL"]}
+        if track_metrics:
+            high_precision = max(track_metrics.items(), key=lambda x: x[1]["precision"])
+            high_recall = max(track_metrics.items(), key=lambda x: x[1]["recall"])
+
+            insights["classwise"] = (
+                f"Among the two tracks, <strong>{high_precision[0]}</strong> achieved the highest precision "
+                f"({high_precision[1]['precision']:.2f}), indicating fewer false positives, "
+                f"while <strong>{high_recall[0]}</strong> has higher recall "
+                f"({high_recall[1]['recall']:.2f}), suggesting better coverage of actual students "
+                f"in that category."
+            )
+
+        # --- Confusion Matrix Analysis ---
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred_labels).ravel()
+        total = tn + fp + fn + tp
+        academic_acc = (tn + fp) and (tn / (tn + fp)) or 0
+        tvl_acc = (tp + fn) and (tp / (tp + fn)) or 0
+
+        if abs(academic_acc - tvl_acc) > 0.15:
+            stronger = "Academic" if academic_acc > tvl_acc else "TVL"
+            insights["confusion"] = (
+                f"The confusion matrix suggests that the model performs better at correctly "
+                f"classifying <strong>{stronger}</strong> students, indicating a potential class imbalance or "
+                f"bias in training data."
+            )
+        else:
+            insights["confusion"] = (
+                "The confusion matrix shows fairly balanced predictions between Academic and TVL tracks, "
+                "implying the model generalizes well across both classes."
+            )
+
+        # --- ROC-AUC Analysis ---
+        if roc_auc >= 0.90:
+            auc_desc = "outstanding discriminatory capability between the two tracks"
+        elif roc_auc >= 0.80:
+            auc_desc = "very good class separation performance"
+        elif roc_auc >= 0.70:
+            auc_desc = "acceptable distinction between Academic and TVL tracks"
+        elif roc_auc >= 0.60:
+            auc_desc = "limited ability to distinguish between classes, suggesting overlap in features"
+        else:
+            auc_desc = "poor separation ability; predictions may rely on noisy or insufficient data"
+
+        insights["roc_auc"] = ( 
+            f"The ROC-AUC score of <strong>{roc_auc:.3f}</strong> reflects {auc_desc}. "
+            f"This means the model can correctly rank a randomly chosen Academic student higher than "
+            f"a TVL student about <strong>{roc_auc * 100:.1f}%</strong> of the time."
+        )
+
+        # --- Recommendation ---
+        if accuracy < 0.70 or roc_auc < 0.75:
+            insights["recommendation"] = (
+                "🔍 Consider retraining the model with more recent data or refining features such as "
+                "subject-level averages, gender balance, or grade normalization to improve predictive accuracy."
+            )
+        else:
+            insights["recommendation"] = (
+                "✅ The model demonstrates reliable performance and can be used for predictive insights. "
+                "However, continuous monitoring with new data is recommended to maintain accuracy."
+            )
+
+        return insights
+
+    analysis = generate_model_analysis()
+
     context = {
         "count": count,
         "accuracy": round(accuracy * 100, 2),
@@ -401,7 +527,8 @@ def modelEvaluation(request):
         "roc_base64": roc_base64,
         "report": report,
         "no_data": False,
-        "current_sy": current_sy,  # pass school year to template
+        "current_sy": current_sy,
+        "analysis": analysis,
     }
 
     return render(request, "predictor/model_evaluation.html", context)
@@ -413,7 +540,38 @@ def adminPanel(request):
     school_years = SchoolYear.objects.all().order_by("-school_year")
     models = ModelTrainingHistory.objects.all().order_by('-trained_at')
 
-    context = {'users': users, 'school_years': school_years, 'models':models}
+    # ✅ Only include school years of students that qualify for training
+    trainable_students = Student.objects.filter(actual_track__isnull=False)
+    student_count = trainable_students.count()
+    included_school_years = (
+        SchoolYear.objects.filter(sy_id__in=trainable_students.values_list("sy_id", flat=True))
+        .values_list("school_year", flat=True)
+        .distinct()
+    )
+    included_school_years_text = ", ".join(included_school_years)
+
+    # Paginate school years
+    sy_paginator = Paginator(school_years, 5)
+    sy_page_number = request.GET.get("sy_page")
+    sy_page_obj = sy_paginator.get_page(sy_page_number)
+
+    # Paginate users
+    user_paginator = Paginator(users, 5)
+    user_page_number = request.GET.get("user_page")
+    user_page_obj = user_paginator.get_page(user_page_number)
+
+    # Paginate model history (optional)
+    model_paginator = Paginator(models, 5)
+    model_page_number = request.GET.get("model_page")
+    model_page_obj = model_paginator.get_page(model_page_number)
+
+    context = {
+        "school_years": sy_page_obj,
+        "users": user_page_obj,
+        "models": model_page_obj,
+        "student_count": student_count,
+        "included_school_years_text": included_school_years_text,
+    }
 
     return render(request, 'predictor/admin_panel.html', context)
 
@@ -430,6 +588,20 @@ class UserUpdateForm(forms.ModelForm):
         if not current_user or not current_user.is_superuser:
             self.fields.pop("is_active")
             self.fields.pop("is_staff")
+
+# @user_passes_test(admin_required, login_url="/login/")
+# def userList(request):
+#     users = User.objects.all().order_by("id")
+
+#     # Paginate users
+#     user_paginator = Paginator(users, 5)
+#     user_page_number = request.GET.get("user_page")
+#     user_page_obj = user_paginator.get_page(user_page_number)
+
+
+#     context = {'users': user_page_obj}
+
+#     return render(request, "predictor/user_list.html", context)
 
 @user_passes_test(admin_required, login_url="/login/")
 def registerUser(request):
@@ -480,22 +652,27 @@ def updateUser(request, user_id):
 @user_passes_test(admin_required, login_url="/login/")
 def deleteUser(request, user_id):
     user = get_object_or_404(User, id=user_id)
+
     if request.method == "POST":
         user.delete()
         messages.success(request, "User deleted successfully!")
         return redirect("admin_panel")
-    
-    context = {'user': user}
+    else:
+        messages.error(request, "Failed to delete user profile.")
+        return redirect("admin_panel")
 
-    return render(request, "predictor/delete_user.html", context)
+# @user_passes_test(admin_required, login_url="/login/")
+# def school_year_list(request):
+#     school_years = SchoolYear.objects.all().order_by("-sy_id")
 
-@user_passes_test(admin_required, login_url="/login/")
-def school_year_list(request):
-    school_years = SchoolYear.objects.all().order_by("-sy_id")
+#     # Paginate school years
+#     sy_paginator = Paginator(school_years, 5)
+#     sy_page_number = request.GET.get("sy_page")
+#     sy_page_obj = sy_paginator.get_page(sy_page_number)
 
-    context = {'school_years': school_years}
+#     context = {'school_years': sy_page_obj}
 
-    return render(request, "predictor/school_year_list.html", context)
+#     return render(request, "predictor/school_year_list.html", context)
 
 @user_passes_test(admin_required, login_url="/login/")
 def add_school_year(request):
@@ -529,12 +706,14 @@ def edit_school_year(request, pk):
 @user_passes_test(admin_required, login_url="/login/")
 def delete_school_year(request, pk):
     sy = get_object_or_404(SchoolYear, pk=pk)
+
     if request.method == "POST":
         sy.delete()
         messages.success(request, "School Year deleted successfully!")
         return redirect("admin_panel")
-    context = {'sy':sy}
-    return render(request, "predictor/delete_school_year.html", context)
+    else:
+        messages.error(request, "Failed to delete School Year.")
+        return redirect("admin_panel")
 
 @user_passes_test(admin_required, login_url="/login/")
 def setCurrentYear(request, sy_id):
@@ -561,8 +740,8 @@ def trainModel(request):
         return redirect("admin_panel") 
 
     # Handle GET — show model info table
-    models = ModelTrainingHistory.objects.all().order_by('-trained_at')
+    # models = ModelTrainingHistory.objects.all().order_by('-trained_at')
 
-    context = {'models': models}
+    # context = {'models': models}
 
-    return render(request, "predictor/train_model.html", context)
+    # return render(request, "predictor/train_model.html", context)

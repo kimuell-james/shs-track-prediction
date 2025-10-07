@@ -7,6 +7,7 @@ class SchoolYearAdmin(admin.ModelAdmin):
     list_display = ("sy_id", "school_year", "is_current")
     list_editable = ("is_current",)
     ordering = ("-sy_id",)
+    list_per_page = 5
 
     @admin.action(description="Train Model for Current School Year")
     def train_model_action(self, request, queryset):
@@ -68,6 +69,7 @@ class ModelTrainingHistoryAdmin(admin.ModelAdmin):
     list_display = ('model_filename', 'school_year', 'accuracy', 'trained_at')
     search_fields = ('model_filename', 'school_year')
     list_filter = ('school_year', 'trained_at')
+    list_per_page = 5
 
 # admin.site.register(SchoolYear)
 # admin.site.register(Student, StudentAdmin)

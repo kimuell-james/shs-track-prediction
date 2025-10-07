@@ -1,0 +1,10 @@
+{
+    "[html]": {
+        "editor.formatOnSave": false
+    },
+    "[django-html]": {
+        "editor.formatOnSave": false,
+        "editor.defaultFormatter": null
+    },
+    "editor.wordWrap": "off"
+}

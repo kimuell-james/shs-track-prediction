@@ -1,4 +1,4 @@
-<div>
+<div id="user-list-section">
     <h3>User List</h3>
     <div>
         <!-- <input type="text">
@@ -7,7 +7,7 @@
             + Add User
         </a>
     </div>
-    <table class="table">
+    <table class="table table-striped">
         <thead>
             <tr>
                 <th>ID</th>
@@ -31,5 +31,8 @@
             {% endfor %}
         </tbody>
     </table>
-    <hr>
+
+
+    {% include "predictor/pagination_controls.html" with page_obj=users page_param="user_page" anchor="#user-list-section" %}
+
 </div>

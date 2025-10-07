@@ -19,4 +19,15 @@
     {% include 'predictor/user_list.html' %}
 </div>
 
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.location.hash) {
+            const section = document.querySelector(window.location.hash);
+            if (section) {
+                section.scrollIntoView({ behavior: "smooth" });
+            }
+        }
+    });
+</script>
+
 {% endblock %}

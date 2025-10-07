@@ -81,10 +81,11 @@ class StudentGrade(models.Model):
 
 class ModelTrainingHistory(models.Model):
     school_year = models.ForeignKey(SchoolYear, on_delete=models.CASCADE)
+    dataset_count = models.IntegerField(default=0)  # ✅ number of students used
+    included_school_years = models.TextField(blank=True, null=True) 
     model_filename = models.CharField(max_length=255)
-    trained_at = models.DateTimeField(auto_now_add=True)
     accuracy = models.FloatField(default=0)
-
+    trained_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=False)  # ✅ new field
 
     def save(self, *args, **kwargs):
