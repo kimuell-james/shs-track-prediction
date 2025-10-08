@@ -30,7 +30,7 @@
         <th>Support</th>
     </tr>
     {% for label, metrics in report.items %}
-    {% if label not in ["accuracy", "macro avg", "weighted avg"] %}
+    {% if label not in "accuracy macro avg weighted avg" %}
     <tr>
         <td>{{ label }}</td>
         <td>{{ metrics.precision|floatformat:2 }}</td>
