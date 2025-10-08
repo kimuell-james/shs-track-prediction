@@ -109,6 +109,11 @@ def evaluate_active_model(school_year: SchoolYear):
     report = classification_report(y_true, y_pred_labels, output_dict=True)
     roc_auc = roc_auc_score(y_true_bin, y_pred_proba)
 
+    # Rename 'f1-score' -> 'f1_score' for all labels
+    for label, metrics in report.items():
+        if isinstance(metrics, dict) and "f1-score" in metrics:
+            metrics["f1_score"] = metrics.pop("f1-score")
+
     # Confusion matrix plot
     plt.figure(figsize=(8, 7))
     sns.heatmap(conf_matrix, annot=True, fmt="d", cmap="Blues",
