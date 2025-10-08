@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True #os.environ.get("DEBUG", "False").lower == "True"
+DEBUG = os.environ.get("DEBUG", "False").lower == "True"
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
