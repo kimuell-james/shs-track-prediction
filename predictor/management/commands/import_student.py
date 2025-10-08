@@ -11,7 +11,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         # csv_path = os.path.join('shs_track_prediction', 'data', 'csv file here')
-        csv_path = Path(settings.BASE_DIR) / 'data' / 'shs-data-testset.csv'
+        csv_path = Path(settings.BASE_DIR) / 'data' / 'shs-data-trainset.csv'
 
         # Get the current active school year
         sy_obj = SchoolYear.objects.filter(is_current=True).first()
