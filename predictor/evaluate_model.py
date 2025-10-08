@@ -75,7 +75,7 @@ def evaluate_active_model(school_year: SchoolYear):
     ]
 
     if df["gender"].dtype == "object":
-        df["gender"] = df["gender"].map({"Female": 0, "Male": 1})
+        df["gender"] = df["gender"].map({"Female": 0, "Male": 1}).fillna(0)
 
     X = df[feature_cols]
     y_true = df["actual_track"]
@@ -89,36 +89,42 @@ def evaluate_active_model(school_year: SchoolYear):
 
     # Map predictions
     track_map = {0: "Academic", 1: "TVL"}
-    y_pred_labels = [track_map[p] for p in y_pred]
-    y_true_bin = y_true.map({"Academic": 0, "TVL": 1})
+    y_pred_labels = [track_map.get(p, "Academic") for p in y_pred]
+
+    y_true_bin = y_true.map({"Academic": 0, "TVL": 1}).fillna(0)
 
     # Metrics with label safety
     labels = ["Academic", "TVL"]
 
     # Handle edge case: only one class present in y_true or y_pred
-    unique_true = set(y_true)
-    unique_pred = set(y_pred_labels)
+    # unique_true = set(y_true)
+    # unique_pred = set(y_pred_labels)
 
-    if len(unique_true) < 2 or len(unique_pred) < 2:
-        # Fill in missing label to prevent shape mismatch
-        for lbl in labels:
-            if lbl not in unique_true:
-                unique_true.add(lbl)
-            if lbl not in unique_pred:
-                unique_pred.add(lbl)
+    # if len(unique_true) < 2 or len(unique_pred) < 2:
+    #     # Fill in missing label to prevent shape mismatch
+    #     for lbl in labels:
+    #         if lbl not in unique_true:
+    #             unique_true.add(lbl)
+    #         if lbl not in unique_pred:
+    #             unique_pred.add(lbl)
 
-    # Compute metrics safely
+    # Safe confusion matrix
     conf_matrix = confusion_matrix(y_true, y_pred_labels, labels=labels).tolist()
-    report = classification_report(y_true, y_pred_labels, labels=labels, output_dict=True)
+
+    # Safe classification report
+    report = classification_report(y_true, y_pred_labels, labels=labels, zero_division=0, output_dict=True)
 
     # Compute accuracy normally
     accuracy = accuracy_score(y_true, y_pred_labels)
 
     # Compute ROC-AUC only if both classes exist in actuals
-    if len(set(y_true_bin)) > 1:
+    # ROC-AUC only if both classes exist in y_true
+    if len(set(y_true_bin)) > 1 and hasattr(model, "predict_proba"):
+        y_pred_proba = model.predict_proba(X_scaled)[:, 1]  # index 1 corresponds to TVL
         roc_auc = roc_auc_score(y_true_bin, y_pred_proba)
     else:
-        roc_auc = 0.0  # fallback to 0 if not computable
+        y_pred_proba = [0.0] * len(y_true)
+        roc_auc = 0.0
 
     # Rename 'f1-score' -> 'f1_score' for all labels
     for label, metrics in report.items():
@@ -179,8 +185,9 @@ def evaluate_active_model(school_year: SchoolYear):
                 f"in that category."
             )
 
-        # --- Confusion Matrix Analysis ---
-        tn, fp, fn, tp = confusion_matrix(y_true, y_pred_labels).ravel()
+        # Confusion analysis
+        cm_array = confusion_matrix(y_true, y_pred_labels, labels=labels)
+        tn, fp, fn, tp = (cm_array.ravel() if cm_array.shape == (2,2) else (0,0,0,0))
         total = tn + fp + fn + tp
         academic_acc = (tn + fp) and (tn / (tn + fp)) or 0
         tvl_acc = (tp + fn) and (tp / (tp + fn)) or 0

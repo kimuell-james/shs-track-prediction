@@ -402,10 +402,10 @@ def modelEvaluation(request):
         messages.info(request, "No active school year set.")
         return render(request, "predictor/model_evaluation.html", {"no_schoolyear": True})
 
-    evaluation = evaluate_active_model(current_sy)
-
-    if evaluation.get("error"):
-        messages.error(request, evaluation["error"])
+    try:
+        evaluation = evaluate_active_model(current_sy)
+    except Exception as e:
+        messages.error(request, f"Error evaluating model: {str(e)}")
         return render(request, "predictor/model_evaluation.html", {"no_data": True})
 
     if evaluation.get("no_data"):
@@ -415,7 +415,7 @@ def modelEvaluation(request):
     context = {
         "count": evaluation["count"],
         "accuracy": round(evaluation["accuracy"] * 100, 2),
-        "roc_auc": round(evaluation["roc_auc"], 3),
+        "roc_auc": round(evaluation["roc_auc"], 3) if evaluation["roc_auc"] > 0 else "N/A",
         "cm_base64": evaluation["cm_base64"],
         "roc_base64": evaluation["roc_base64"],
         "report": evaluation["report"],

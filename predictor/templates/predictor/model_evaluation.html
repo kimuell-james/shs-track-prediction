@@ -14,8 +14,8 @@
     <h5><b>Accuracy:</b> {{ accuracy }}%</h5>
 </div>
 <div class="mt-3">
-    <p><strong>Overall Performance:</strong> {{ analysis.overall|safe }}</p>
-    <p><strong>Recommendation:</strong> {{ analysis.recommendation|safe }}</p>
+    <p><strong>Overall Performance:</strong> {{ analysis.overall|default:"No overall performance insights available."|safe }}</p>
+    <p><strong>Recommendation:</strong> {{ analysis.recommendation|default:"No recommendation available."|safe }}</p>
 </div>
 <hr>
 
@@ -30,7 +30,7 @@
         <th>Support</th>
     </tr>
     {% for label, metrics in report.items %}
-    {% if label not in "accuracy macro avg weighted avg" %}
+    {% if label not in ["accuracy", "macro avg", "weighted avg"] %}
     <tr>
         <td>{{ label }}</td>
         <td>{{ metrics.precision|floatformat:2 }}</td>
@@ -42,7 +42,7 @@
     {% endfor %}
 </table>
 <div class="mt-3">
-    <p><strong>Class-wise Insights:</strong> {{ analysis.classwise|safe }}</p>
+    <p><strong>Class-wise Insights:</strong> {{ analysis.classwise|default:"No class-wise insights available."|safe }}</p>
 </div>
 <hr>
 
@@ -51,17 +51,21 @@
     <img src="data:image/png;base64,{{ cm_base64 }}" class="img-fluid" alt="Confusion Matrix" />
 </div>
 <div class="mt-3">
-    <p><strong>Confusion Matrix Interpretation:</strong> {{ analysis.confusion|safe }}</p>
+    <p><strong>Confusion Matrix Interpretation:</strong> {{ analysis.confusion|default:"No confusion matrix analysis available."|safe }}</p>
 </div>
 <hr>
 
 <h3>ROC Curve</h3>
 <div class="text-center">
     <h5>ROC-AUC Score: <strong>{{ roc_auc }}</strong></h5>
+    {% if roc_auc != "N/A" %}
     <img src="data:image/png;base64,{{ roc_base64 }}" class="img-fluid" alt="ROC Curve" />
+    {% else %}
+    <p>ROC Curve not available (only one class present in the data).</p>
+    {% endif %}
 </div>
 <div class="mt-3">
-    <p><strong>ROC-AUC Score Analysis:</strong> {{ analysis.roc_auc|safe }}</p>
+    <p><strong>ROC-AUC Score Analysis:</strong> {{ analysis.roc_auc|default:"No ROC-AUC analysis available."|safe }}</p>
 </div>
 
 {% endif %}
