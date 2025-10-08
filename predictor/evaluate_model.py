@@ -16,6 +16,7 @@ from django.conf import settings
 from predictor.models import Student, StudentGrade, SchoolYear, ModelTrainingHistory
 from io import BytesIO
 import base64
+from predictor.load_supabase import load_active_model
 
 # Helper to convert matplotlib plot to base64
 def plot_to_base64():
@@ -28,19 +29,7 @@ def plot_to_base64():
 
 def evaluate_active_model(school_year: SchoolYear):
     # Get active model
-    active_model = ModelTrainingHistory.objects.filter(is_active=True).first()
-    if not active_model:
-        return {"error": "No active model found."}
-
-    # Load model & scaler
-    model_path = os.path.join(settings.BASE_DIR, "predictor", "ml_models", active_model.model_filename)
-    scaler_path = f"{model_path}_scaler.pkl"
-
-    if not os.path.exists(model_path) or not os.path.exists(scaler_path):
-        return {"error": "Model files not found."}
-
-    model = joblib.load(model_path)
-    scaler = joblib.load(scaler_path)
+    model, scaler, training_columns = load_active_model()
 
     # Get students with actual & predicted tracks in this school year
     students = Student.objects.filter(sy=school_year) \
@@ -103,11 +92,33 @@ def evaluate_active_model(school_year: SchoolYear):
     y_pred_labels = [track_map[p] for p in y_pred]
     y_true_bin = y_true.map({"Academic": 0, "TVL": 1})
 
-    # Metrics
+    # Metrics with label safety
+    labels = ["Academic", "TVL"]
+
+    # Handle edge case: only one class present in y_true or y_pred
+    unique_true = set(y_true)
+    unique_pred = set(y_pred_labels)
+
+    if len(unique_true) < 2 or len(unique_pred) < 2:
+        # Fill in missing label to prevent shape mismatch
+        for lbl in labels:
+            if lbl not in unique_true:
+                unique_true.add(lbl)
+            if lbl not in unique_pred:
+                unique_pred.add(lbl)
+
+    # Compute metrics safely
+    conf_matrix = confusion_matrix(y_true, y_pred_labels, labels=labels).tolist()
+    report = classification_report(y_true, y_pred_labels, labels=labels, output_dict=True)
+
+    # Compute accuracy normally
     accuracy = accuracy_score(y_true, y_pred_labels)
-    conf_matrix = confusion_matrix(y_true, y_pred_labels).tolist()
-    report = classification_report(y_true, y_pred_labels, output_dict=True)
-    roc_auc = roc_auc_score(y_true_bin, y_pred_proba)
+
+    # Compute ROC-AUC only if both classes exist in actuals
+    if len(set(y_true_bin)) > 1:
+        roc_auc = roc_auc_score(y_true_bin, y_pred_proba)
+    else:
+        roc_auc = 0.0  # fallback to 0 if not computable
 
     # Rename 'f1-score' -> 'f1_score' for all labels
     for label, metrics in report.items():

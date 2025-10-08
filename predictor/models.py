@@ -99,7 +99,15 @@ class ModelTrainingHistory(models.Model):
     school_year = models.ForeignKey(SchoolYear, on_delete=models.CASCADE)
     dataset_count = models.IntegerField(default=0)  # ✅ number of students used
     included_school_years = models.TextField(blank=True, null=True) 
+
     model_filename = models.CharField(max_length=255)
+    scaler_filename = models.CharField(max_length=255, blank=True, null=True)
+    columns_filename = models.CharField(max_length=255, blank=True, null=True)
+
+    model_url = models.URLField(blank=True, null=True)
+    scaler_url = models.URLField(blank=True, null=True)
+    columns_url = models.URLField(blank=True, null=True)
+    
     accuracy = models.FloatField(default=0)
     trained_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=False)  # ✅ new field

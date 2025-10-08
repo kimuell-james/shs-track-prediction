@@ -4,6 +4,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from .models import ModelTrainingHistory
+from predictor.load_supabase import load_active_model
 
 def predict_track_for_student(student, grades):
     # Convert gender to numeric
@@ -56,24 +57,7 @@ def predict_track_for_student(student, grades):
     }
 
     # Load active model
-    active_models = ModelTrainingHistory.objects.filter(is_active=True)
-    if not active_models.exists():
-        raise ValueError("⚠️ No active model found. Train one first.")
-    elif active_models.count() > 1:
-        raise ValueError("⚠️ Multiple active models found. Please keep only one active model.")
-        
-    active_model = active_models.first()
-    
-    model_dir  = os.path.join(settings.BASE_DIR, "predictor", "ml_models")
-    model_path = os.path.join(model_dir, active_model.model_filename)
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"⚠️ Model file not found at {model_path}. Please retrain the model.")
-    scaler_path = os.path.join(model_dir, f"{active_model.model_filename}_scaler.pkl")
-    columns_path = os.path.join(model_dir, f"{active_model.model_filename}_columns.pkl")
-
-    model = joblib.load(model_path)
-    scaler = joblib.load(scaler_path)
-    training_columns = joblib.load(columns_path)
+    model, scaler, training_columns = load_active_model()
 
     # Prepare input data
     input_df = pd.DataFrame([input_dict])

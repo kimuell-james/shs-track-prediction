@@ -7,6 +7,7 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import accuracy_score, classification_report
 from django.conf import settings
 from predictor.models import Student, StudentGrade, SchoolYear, ModelTrainingHistory
+from predictor.supabase_client import upload_to_supabase
 
 def train_model():
     # Get current school year
@@ -100,9 +101,18 @@ def train_model():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     model_filename = f"shs_track_insight_model_{current_sy.school_year.replace(' ','').replace('-','_')}_{timestamp}.pkl"
     
-    joblib.dump(model, os.path.join(model_dir, model_filename))
-    joblib.dump(scaler, os.path.join(model_dir, f"{model_filename}_scaler.pkl"))
-    joblib.dump(feature_columns, os.path.join(model_dir, f"{model_filename}_columns.pkl"))
+    model_path = os.path.join(model_dir, model_filename)
+    scaler_path = os.path.join(model_dir, f"{model_filename}_scaler.pkl")
+    columns_path = os.path.join(model_dir, f"{model_filename}_columns.pkl")
+
+    joblib.dump(model, model_path)
+    joblib.dump(scaler, scaler_path)
+    joblib.dump(feature_columns, columns_path)
+
+    # === ✅ Upload to Supabase ===
+    model_url = upload_to_supabase(model_path, model_filename)
+    scaler_url = upload_to_supabase(scaler_path, f"{model_filename}_scaler.pkl")
+    columns_url = upload_to_supabase(columns_path, f"{model_filename}_columns.pkl")
 
     # ✅ Only include school years of students that qualify for training
     dataset_size = students.count()
@@ -119,10 +129,15 @@ def train_model():
         dataset_count=dataset_size,
         included_school_years=included_school_years_text,
         model_filename=model_filename,
+        scaler_filename=f"{model_filename}_scaler.pkl",
+        columns_filename=f"{model_filename}_columns.pkl",
+        model_url=model_url,
+        scaler_url=scaler_url,
+        columns_url=columns_url,
         accuracy=training_accuracy,
         trained_at=datetime.now(),
         is_active=True,
     )
     ModelTrainingHistory.objects.exclude(pk=new_model.pk).update(is_active=False)
 
-    return f"Model trained successfully for {current_sy.school_year} (Accuracy: {training_accuracy:.2%}, {dataset_size} records)"
+    return f"Model trained successfully for {current_sy.school_year} (Accuracy: {training_accuracy:.2%}, {dataset_size} records) - Uploaded to Supabase"
