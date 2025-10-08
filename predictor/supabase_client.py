@@ -20,15 +20,33 @@ def upload_to_supabase(local_path: str, file_name: str) -> str:
     """
     bucket_name = "ml_models"
     supabase = get_supabase_client()
+    supabase_url = os.getenv("SUPABASE_URL") or getattr(settings, "SUPABASE_URL", "")
 
     try:
         with open(local_path, "rb") as f:
-            supabase.storage.from_(bucket_name).upload(file_name, f, {"upsert": True})
+            response = supabase.storage.from_(bucket_name).upload(
+                file=f,
+                path=file_name,
+                file_options={"cache-control": "3600", "upsert": "true"}
+            )
 
-        # ✅ Get the public URL
-        public_url = supabase.storage.from_(bucket_name).get_public_url(file_name)
-        print(f"✅ Uploaded {file_name} to Supabase. Public URL: {public_url}")
+        if hasattr(response, "error") and response.error:
+            print(f"❌ Upload failed for {file_name}: {response.error}")
+            return None
+
+        # ✅ Construct full public URL manually
+        public_url = f"{supabase_url}/storage/v1/object/public/{bucket_name}/{file_name}"
+        print(f"✅ Uploaded '{file_name}' successfully!")
+        print(f"🌐 Public URL: {public_url}")
+
+        # Optional: Verify upload success
+        check = supabase.storage.from_(bucket_name).list()
+        uploaded_files = [f['name'] for f in check]
+        if file_name not in uploaded_files:
+            print(f"⚠️ File '{file_name}' not found in Supabase bucket listing — upload may have failed silently.")
+
         return public_url
+
     except Exception as e:
-        print(f"❌ Failed to upload {file_name}: {e}")
+        print(f"❌ Exception while uploading {file_name}: {e}")
         return None
