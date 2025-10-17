@@ -86,10 +86,11 @@ WSGI_APPLICATION = 'shs_track_prediction.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# # local database
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'shs_prediction_db',
+#         'NAME': 'shs_db_local',
 #         'USER': 'postgres',
 #         'PASSWORD': 'iamadmin1130',
 #         'HOST': 'localhost',
@@ -97,6 +98,7 @@ WSGI_APPLICATION = 'shs_track_prediction.wsgi.application'
 #     }
 # }
 
+# online database
 DATABASES = {
     "default": dj_database_url.parse(
         "postgresql://kimuelljames:zHAUsRRXXRg62zzCiXHPeIPgvzAmWRqv@dpg-d3ivgct6ubrc739ur7mg-a.singapore-postgres.render.com/shs_prediction_db",
@@ -146,6 +148,7 @@ STATICFILES_DIRS = [
 
 if not DEBUG:
     STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+    os.makedirs(STATIC_ROOT, exist_ok=True)
     STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Default primary key field type

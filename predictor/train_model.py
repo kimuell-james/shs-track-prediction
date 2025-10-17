@@ -109,12 +109,12 @@ def train_model():
     joblib.dump(scaler, scaler_path)
     joblib.dump(feature_columns, columns_path)
 
-    # === ✅ Upload to Supabase ===
+    # Upload to Supabase
     model_url = upload_to_supabase(model_path, model_filename)
     scaler_url = upload_to_supabase(scaler_path, f"{model_filename}_scaler.pkl")
     columns_url = upload_to_supabase(columns_path, f"{model_filename}_columns.pkl")
 
-    # ✅ Only include school years of students that qualify for training
+    # Only include school years of students that qualify for training
     dataset_size = students.count()
     included_school_years = (
         SchoolYear.objects.filter(sy_id__in=students.values_list("sy_id", flat=True))

@@ -11,16 +11,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         # csv_path = os.path.join('shs_track_prediction', 'data', 'csv file here')
-        csv_path = Path(settings.BASE_DIR) / 'data' / 'shs-data-trainset.csv'
+        csv_path = Path(settings.BASE_DIR) / 'data' / 'shs-data-testset.csv'
 
         # Get the current active school year
         sy_obj = SchoolYear.objects.filter(is_current=True).first()
 
         with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
             reader = csv.DictReader(csvfile, delimiter=',')  
-            for row in reader:
-                # print(row.keys())  # shows all column names from CSV
-                break
             for row in reader:
                 student = Student.objects.create(
                     age=int(row['age']),

@@ -1,5 +1,3 @@
-# predictor/evaluate_model.py
-
 import os
 import pandas as pd
 import joblib
@@ -96,28 +94,15 @@ def evaluate_active_model(school_year: SchoolYear):
     # Metrics with label safety
     labels = ["Academic", "TVL"]
 
-    # Handle edge case: only one class present in y_true or y_pred
-    # unique_true = set(y_true)
-    # unique_pred = set(y_pred_labels)
-
-    # if len(unique_true) < 2 or len(unique_pred) < 2:
-    #     # Fill in missing label to prevent shape mismatch
-    #     for lbl in labels:
-    #         if lbl not in unique_true:
-    #             unique_true.add(lbl)
-    #         if lbl not in unique_pred:
-    #             unique_pred.add(lbl)
-
-    # Safe confusion matrix
+    # Confusion matrix
     conf_matrix = confusion_matrix(y_true, y_pred_labels, labels=labels).tolist()
 
-    # Safe classification report
+    # Classification report
     report = classification_report(y_true, y_pred_labels, labels=labels, zero_division=0, output_dict=True)
 
     # Compute accuracy normally
     accuracy = accuracy_score(y_true, y_pred_labels)
 
-    # Compute ROC-AUC only if both classes exist in actuals
     # ROC-AUC only if both classes exist in y_true
     if len(set(y_true_bin)) > 1 and hasattr(model, "predict_proba"):
         y_pred_proba = model.predict_proba(X_scaled)[:, 1]  # index 1 corresponds to TVL
@@ -154,7 +139,7 @@ def evaluate_active_model(school_year: SchoolYear):
     def generate_model_analysis():
         insights = {}
 
-        # --- Overall Model Performance ---
+        # Overall Model Performance
         if accuracy >= 0.85:
             perf_desc = "excellent performance with high predictive reliability"
         elif accuracy >= 0.75:
@@ -171,7 +156,7 @@ def evaluate_active_model(school_year: SchoolYear):
             f"and <strong>TVL</strong> tracks."
         )
 
-        # --- Class-wise Analysis ---
+        # Class-wise Analysis
         track_metrics = {k: v for k, v in report.items() if k in ["Academic", "TVL"]}
         if track_metrics:
             high_precision = max(track_metrics.items(), key=lambda x: x[1]["precision"])
@@ -205,7 +190,7 @@ def evaluate_active_model(school_year: SchoolYear):
                 "implying the model generalizes well across both classes."
             )
 
-        # --- ROC-AUC Analysis ---
+        # ROC-AUC Analysis
         if roc_auc >= 0.90:
             auc_desc = "outstanding discriminatory capability between the two tracks"
         elif roc_auc >= 0.80:
@@ -223,7 +208,7 @@ def evaluate_active_model(school_year: SchoolYear):
             f"a TVL student about <strong>{roc_auc*100:.1f}%</strong> of the time."
         )
 
-        # --- Recommendation ---
+        # Recommendation
         if accuracy < 0.70 or roc_auc < 0.75:
             insights["recommendation"] = (
                 "🔍 Consider retraining the model with more recent data or refining features such as "

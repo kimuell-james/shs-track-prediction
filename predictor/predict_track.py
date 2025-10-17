@@ -74,7 +74,7 @@ def predict_track_for_student(student, grades):
     track_map = {0: "Academic", 1: "TVL"}
     predicted_label = track_map.get(prediction, "Unknown")
 
-    # --- Feature names mapping ---
+    # Feature names mapping
     feature_names = [
         "age", "gender",
         "g7_filipino", "g7_english", "g7_math", "g7_science", "g7_ap", "g7_tle", "g7_mapeh", "g7_esp",

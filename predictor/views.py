@@ -226,11 +226,12 @@ def studentsRecord(request):
         messages.info(request, "No active school year set.")
         records = Student.objects.none()  # no records if no active SY set
 
-    paginator = Paginator(records, 50)  # 50 records per page
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    # paginator = Paginator(records, 50)  # 50 records per page
+    # page_number = request.GET.get("page")
+    # page_obj = paginator.get_page(page_number)
 
-    context = {"records": records, "page_obj": page_obj, "current_sy": current_sy}
+    # context = {"records": records, "page_obj": page_obj, "current_sy": current_sy}
+    context = {"records": records, "current_sy": current_sy}
 
     return render(request, 'predictor/student_record.html', context)
 

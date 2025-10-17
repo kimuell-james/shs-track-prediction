@@ -4,4 +4,6 @@ data/
 
 .vscode/
 
+staticfiles/
+
 .env
