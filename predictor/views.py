@@ -16,6 +16,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.http import JsonResponse
+from django.http import HttpResponse
+from django.http import FileResponse
 from django.urls import reverse
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score, roc_curve, ConfusionMatrixDisplay
 from django.contrib.auth.models import User
@@ -29,8 +31,10 @@ from .models import *
 from .forms import *
 from .train_model import train_model
 from .evaluate_model import evaluate_active_model
+from .report_generator import generate_pdf_report
 from .decorators import unauthenticated_user
 from .constants import SUBJECT_LABELS
+import tempfile
 
 def admin_required(user):
     return user.is_superuser
@@ -62,7 +66,7 @@ def logoutUser(request):
 
 @login_required(login_url="/login/")
 def home(request):
-    # --- 1Get current school year ---
+    # --- Get current school year ---
     current_sy = SchoolYear.objects.filter(is_current=True).first()
     if not current_sy:
         messages.info(request, "No active school year set.")
@@ -633,9 +637,31 @@ def trainModel(request):
             messages.error(request, f"❌ Training failed: {e}")
         return redirect("admin_panel") 
 
-    # Handle GET — show model info table
-    # models = ModelTrainingHistory.objects.all().order_by('-trained_at')
 
-    # context = {'models': models}
+def generateReport(request):
+    """Generate, download, and show success message after."""
+    current_sy = SchoolYear.objects.get(is_current=True)
 
-    # return render(request, "predictor/train_model.html", context)
+    # Create temporary PDF file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmpfile:
+        generate_pdf_report(tmpfile.name, current_sy.sy_id)
+        file_path = tmpfile.name
+
+    formatted_sy = str(current_sy.school_year).replace("/", "-")
+    filename = f"SHS_Track_Insight_Report_{formatted_sy}.pdf"
+
+    # Add message before sending response
+    messages.success(request, "SHS Track Insight Report downloaded successfully.")
+
+    # Return file for download, and cleanup when done
+    response = FileResponse(open(file_path, "rb"), as_attachment=True, filename=filename)
+
+    # Optional: Delete temp file when response is closed
+    def cleanup_file(file_path):
+        try:
+            os.remove(file_path)
+        except FileNotFoundError:
+            pass
+
+    response.close = lambda *args, **kwargs: cleanup_file(file_path)
+    return response

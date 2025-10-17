@@ -32,4 +32,6 @@ urlpatterns = [
     
     path("admin_panel/train_model/", views.trainModel, name="train_model"),
 
+    path("generate_report/", views.generateReport, name="generate_report"),
+
 ]

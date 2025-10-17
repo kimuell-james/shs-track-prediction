@@ -9,6 +9,19 @@
 
 <!-- Summary -->
 <h3>Student Count for School Year {{ current_sy }}</h3>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        {% if current_sy %}
+        <a href="{% url 'generate_report' %}?sy_id={{ current_sy.sy_id }}" class="btn btn-primary">
+            <i class="bi bi-file-earmark-pdf"></i> Download PDF Report
+        </a>
+        {% else %}
+        <p><i>No active school year available for report generation.</i></p>
+        {% endif %}
+    </div>
+</div>
+
 <div class="stats">
     <h5><b>Total Students:</b> {{ total_students }}</h5>
     <h5><b>With Predicted Track:</b> {{ predicted_count }}</h5>
